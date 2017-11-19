@@ -3,9 +3,12 @@
 ## Arabic To Persian
 
 ```javascript
-const arabicToPersian = require('persian').arabicToPersian;
+const toPersian = require('persian');
 
-arabicToPersian('اردك ٤٦');
-// اردک ۴۶
+toPersian('اردك ٤6٦');
+// اردک ۴۶۶
+
+toPersian('اردك ٤6٦', { english: false });
+// اردک ۴6۶
 
 ```

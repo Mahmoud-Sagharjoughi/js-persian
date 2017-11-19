@@ -6,7 +6,7 @@ String.prototype.replaceAll = function(mapObj) {
   });
 };
 
-function replaceAllToPersian(str) {
+function replaceArabicToPersian(str) {
   const arabicSignsCharCode = Array(21).fill(0).map((e, i) => i + 1611);
 
   for (let i = 0; i < arabicSignsCharCode.length; i += 1) {
@@ -33,8 +33,33 @@ function replaceAllToPersian(str) {
   return str.replaceAll(charMap);
 }
 
-module.exports = {
-  arabicToPersian(str) {
-    return replaceAllToPersian(str);
-  },
-};
+function replaceEnglishToPersian(str) {
+  const charMap = {
+    '0': '۰',
+    '1': '۱',
+    '2': '۲',
+    '3': '۳',
+    '4': '۴',
+    '5': '۵',
+    '6': '۶',
+    '7': '۷',
+    '8': '۸',
+    '9': '۹',
+  };
+  return str.replaceAll(charMap);
+}
+
+
+module.exports = (str, {
+  arabic = true,
+  english = true,
+} = {}) => {
+  let result = str;
+  if (arabic) {
+    result = replaceArabicToPersian(result);
+  }
+  if (english) {
+    result = replaceEnglishToPersian(result);
+  }
+  return result;
+}
