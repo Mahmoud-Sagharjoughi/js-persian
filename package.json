@@ -1,6 +1,6 @@
 {
   "name": "persian",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Persian(farsi) localization",
   "main": "dist/persian.js",
   "scripts": {
