@@ -1,6 +1,6 @@
 # Library for Persian(farsi) localization
 
-## Arabic To Persian
+## To Persian
 
 ```javascript
 const toPersian = require('persian');
