@@ -1,6 +1,6 @@
 {
   "name": "persian",
-  "version": "0.1.4",
+  "version": "1.1.4",
   "description": "Persian(farsi) localization",
   "main": "dist/persian.js",
   "scripts": {
@@ -18,7 +18,9 @@
     "persian",
     "arabic",
     "farsi",
-    "localization"
+    "english",
+    "localization",
+    "to persian"
   ],
   "repository": {
     "type": "git",

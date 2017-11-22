@@ -49,11 +49,10 @@ function replaceEnglishToPersian(str) {
   return str.replaceAll(charMap);
 }
 
-
-module.exports = (str, {
+function toPersian(str, {
   arabic = true,
   english = true,
-} = {}) => {
+} = {}) {
   let result = str;
   if (arabic) {
     result = replaceArabicToPersian(result);
@@ -63,3 +62,7 @@ module.exports = (str, {
   }
   return result;
 }
+
+module.exports = {
+  toPersian,
+};
