@@ -20,7 +20,8 @@
     "farsi",
     "english",
     "localization",
-    "to persian"
+    "to persian",
+    "to english"
   ],
   "repository": {
     "type": "git",
