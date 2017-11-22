@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mahmoud Sagharjoughi <mahmood.sa225@gmail.com>",
-  "license": "MIT",
+  "license": "Beerware",
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-es2015": "^6.24.1"
