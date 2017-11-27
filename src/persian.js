@@ -65,11 +65,14 @@ function replacePersianToEnglish(str) {
   return str.replaceAll(charMap);
 }
 
-function toPersian(str, {
+function toPersian(input, {
   arabic = true,
   english = true,
 } = {}) {
-  let result = str;
+  if (typeof input !== 'string' && typeof input !== 'number') {
+    throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
+  }
+  let result = String(input);
   if (arabic) {
     result = replaceArabicToPersian(result);
   }
@@ -79,8 +82,11 @@ function toPersian(str, {
   return result;
 }
 
-function toEnglish(str) {
-  return replacePersianToEnglish(str);
+function toEnglish(input) {
+  if (typeof input !== 'string' && typeof input !== 'number') {
+    throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
+  }
+  return replacePersianToEnglish(String(input));
 }
 
 module.exports = {
