@@ -1,34 +1,51 @@
-# Library for Persian(farsi) localization
+# Library for Persian(farsi) localization "`persian`"
 
-## To Persian
+[![npm](https://img.shields.io/npm/v/npm.svg?style=for-the-badge)](https://www.npmjs.com/package/persian)
+
+## Installing
+
+### Using NPM
+
+```bash
+npm install persian
+```
+
+### Using Yarn
+
+```bash
+yarn add persian
+```
+
+## Example
+
+### To Persian
 
 Latest Version
 
 ```javascript
-const persian = require('persian');
+// ES6
+import { toPersian, toEnglish } from 'persian';
 
-persian.toPersian('اردك ٤6٦');
-// اردک ۴۶۶
+toPersian('اردك علي ٤6٦'); // اردک علی ۴۶۶
 
-persian.toPersian('اردك ٤6٦', { english: false });
-// اردک ۴6۶
+// { english, arabic }
+toPersian('اردك علي ٤6٦', { english: false }); // اردک علی ۴6۶
 
-persian.toEnglish('۷۶۳۲۴۵');
-// 763245
+### From Persian To English
+
+toEnglish('۷۶۳۲۴۵'); // 763245
 
 ```
 
 ___
 
-Prior Version 1.0.0 (<= 1.0.0)
+Prior Version 1.0.0 (< 1.0.0)
 
 ```javascript
 const toPersian = require('persian');
 
-toPersian('اردك ٤6٦');
-// اردک ۴۶۶
+toPersian('اردك علي ٤6٦'); // اردک علی ۴۶۶
 
-toPersian('اردك ٤6٦', { english: false });
-// اردک ۴6۶
+toPersian('اردك علي ٤6٦', { english: false }); // اردک علی ۴6۶
 
 ```
