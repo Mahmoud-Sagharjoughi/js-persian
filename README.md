@@ -1,6 +1,6 @@
 # Library for Persian(farsi) localization "`persian`"
 
-[![npm](https://img.shields.io/npm/v/npm.svg?style=for-the-badge)](https://www.npmjs.com/package/persian)
+[![npm version](https://badge.fury.io/js/persian.svg)](https://badge.fury.io/js/persian)
 
 ## Installing
 
