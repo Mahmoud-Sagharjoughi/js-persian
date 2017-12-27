@@ -16,7 +16,7 @@ npm install persian
 yarn add persian
 ```
 
-## Example
+## Examples
 
 ### To Persian
 
@@ -31,8 +31,7 @@ toPersian('اردك علي ٤6٦'); // اردک علی ۴۶۶
 // { english, arabic }
 toPersian('اردك علي ٤6٦', { english: false }); // اردک علی ۴6۶
 
-### From Persian To English
-
+// From Persian To English
 toEnglish('۷۶۳۲۴۵'); // 763245
 
 ```
