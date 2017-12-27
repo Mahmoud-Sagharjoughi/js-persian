@@ -1,22 +1,18 @@
-String.prototype.replaceAll = function(mapObj) {
-  let regex = new RegExp(Object.keys(mapObj).join('|'), 'gi');
-  let str = this;
-  return str.replace(regex, function(key) {
-    return mapObj[key];
-  });
-};
+function replaceAll(str, mapObj) {
+  const regex = new RegExp(Object.keys(mapObj).join('|'), 'gi');
+  return str.replace(regex, key => mapObj[key]);
+}
 
 function replaceArabicToPersian(str) {
-  const arabicSignsCharCode = Array(21).fill(0).map((e, i) => i + 1611);
-
-  for (let i = 0; i < arabicSignsCharCode.length; i += 1) {
-    str = str.replace(new RegExp(String.fromCharCode(arabicSignsCharCode[i]), 'g'), '');
+  let newStr = str;
+  for (let i = 1611; i < 1632; i += 1) {
+    newStr = newStr.replace(new RegExp(String.fromCharCode(i), 'g'), '');
   }
 
   const charMap = {
-    'ي': 'ی',
-    'ى': 'ی',
-    'ك': 'ک',
+    ي: 'ی',
+    ى: 'ی',
+    ك: 'ک',
     '‍': '',
     '‌': '',
     '٠': '۰',
@@ -30,23 +26,23 @@ function replaceArabicToPersian(str) {
     '٨': '۸',
     '٩': '۹',
   };
-  return str.replaceAll(charMap);
+  return replaceAll(newStr, charMap);
 }
 
 function replaceEnglishToPersian(str) {
   const charMap = {
-    '0': '۰',
-    '1': '۱',
-    '2': '۲',
-    '3': '۳',
-    '4': '۴',
-    '5': '۵',
-    '6': '۶',
-    '7': '۷',
-    '8': '۸',
-    '9': '۹',
+    0: '۰',
+    1: '۱',
+    2: '۲',
+    3: '۳',
+    4: '۴',
+    5: '۵',
+    6: '۶',
+    7: '۷',
+    8: '۸',
+    9: '۹',
   };
-  return str.replaceAll(charMap);
+  return replaceAll(str, charMap);
 }
 
 function replacePersianToEnglish(str) {
@@ -62,7 +58,7 @@ function replacePersianToEnglish(str) {
     '۸': '8',
     '۹': '9',
   };
-  return str.replaceAll(charMap);
+  return replaceAll(str, charMap);
 }
 
 function toPersian(input, {

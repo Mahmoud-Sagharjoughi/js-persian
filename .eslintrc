@@ -1,0 +1,11 @@
+{
+  "extends": "airbnb-base",
+  "parserOptions": {
+    "sourceType": "module",
+    "ecmaVersion": 8
+  },
+  "globals": {
+    "bridge": true,
+    "chrome": true
+  }
+}

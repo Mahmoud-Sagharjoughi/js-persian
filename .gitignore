@@ -3,3 +3,7 @@ node_modules/
 .idea/
 .vscode/
 test.js
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
