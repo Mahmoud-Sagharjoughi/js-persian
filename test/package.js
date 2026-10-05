@@ -9,14 +9,14 @@ var archives = fs.readdirSync(archiveDirectory).filter(function (file) {
   return /^persian-.*\.tgz$/.test(file);
 });
 assert.strictEqual(archives.length, 1, 'Expected one npm package');
-var archive = path.join(archiveDirectory, archives[0]);
+var archive = fs.readFileSync(path.join(archiveDirectory, archives[0]));
 var expectedFiles = ['LICENSE', 'README.md', 'dist/persian.js', 'index.d.ts', 'package.json'];
-var entries = execFileSync('tar', ['-tzf', archive], { encoding: 'utf8' }).trim().split(/\r?\n/);
+var entries = execFileSync('tar', ['-tzf', '-'], { input: archive, encoding: 'utf8' }).trim().split(/\r?\n/);
 assert.deepEqual(entries.sort(), expectedFiles.map(function (file) { return 'package/' + file; }).sort());
 
 var target = path.join(consumer, 'node_modules', 'persian');
 fs.mkdirSync(target, { recursive: true });
-execFileSync('tar', ['-xzf', archive, '--strip-components=1', '-C', target]);
+execFileSync('tar', ['-xzf', '-', '--strip-components=1'], { input: archive, cwd: target });
 var metadata = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'));
 assert.strictEqual(metadata.name, 'persian');
 assert.strictEqual(metadata.version, require('../package.json').version);
