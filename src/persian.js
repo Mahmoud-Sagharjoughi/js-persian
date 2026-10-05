@@ -3,7 +3,7 @@ function replaceAll(str, mapObj) {
   return str.replace(regex, key => mapObj[key]);
 }
 
-function replaceArabicToPersian(str) {
+function replaceArabicToPersian(str, preserveHalfSpace) {
   let newStr = str;
   for (let i = 1611; i < 1632; i += 1) {
     newStr = newStr.replace(new RegExp(String.fromCharCode(i), 'g'), '');
@@ -14,7 +14,6 @@ function replaceArabicToPersian(str) {
     ى: 'ی',
     ك: 'ک',
     '‍': '',
-    '‌': '',
     '٠': '۰',
     '١': '۱',
     '٢': '۲',
@@ -26,6 +25,9 @@ function replaceArabicToPersian(str) {
     '٨': '۸',
     '٩': '۹',
   };
+  if (!preserveHalfSpace) {
+    charMap['\u200c'] = '';
+  }
   return replaceAll(newStr, charMap);
 }
 
@@ -64,13 +66,14 @@ function replacePersianToEnglish(str) {
 function toPersian(input, {
   arabic = true,
   english = true,
+  preserveHalfSpace = false,
 } = {}) {
   if (typeof input !== 'string' && typeof input !== 'number') {
     throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
   }
   let result = String(input);
   if (arabic) {
-    result = replaceArabicToPersian(result);
+    result = replaceArabicToPersian(result, preserveHalfSpace);
   }
   if (english) {
     result = replaceEnglishToPersian(result);
