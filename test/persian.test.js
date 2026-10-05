@@ -35,6 +35,7 @@ persianCases.forEach(function (testCase) {
   assert.strictEqual(toPersian(input), expected);
   assert.strictEqual(toPersian(input, {}), expected);
   assert.strictEqual(toPersian(input, { preserveHalfSpace: false }), expected);
+  assert.strictEqual(toPersian(input, { preserveDiacritics: false }), expected);
 });
 
 var mixed = 'اردك علي ٤6٦';
@@ -51,8 +52,19 @@ assert.strictEqual(toPersian('مي\u200c\u200dروم', { preserveHalfSpace: true
 assert.strictEqual(toPersian('مُحَمَّد', { preserveHalfSpace: true }), 'محمد');
 assert.strictEqual(toPersian('مي\u200cروم', { arabic: false }), 'مي\u200cروم');
 
+assert.strictEqual(toPersian('مُحَمَّد', { preserveDiacritics: true }), 'مُحَمَّد');
+assert.strictEqual(toPersian('عَلِي 123٤', { preserveDiacritics: true }), 'عَلِی ۱۲۳۴');
+assert.strictEqual(toPersian('عَلِي 123٤', { preserveDiacritics: true, english: false }), 'عَلِی 123۴');
+assert.strictEqual(toPersian('عَلِي 123٤', { preserveDiacritics: true, arabic: false }), 'عَلِي ۱۲۳٤');
+assert.strictEqual(toPersian('مِي\u200cروم 12٤', { preserveDiacritics: true, preserveHalfSpace: true }), 'مِی\u200cروم ۱۲۴');
+assert.strictEqual(toPersian('مِي\u200c\u200dروم', { preserveDiacritics: true }), 'مِیروم');
+assert.strictEqual(toPersian('مِي\u200c\u200dروم', { preserveDiacritics: true, preserveHalfSpace: true }), 'مِی\u200cروم');
+assert.strictEqual(toPersian('مُحَمَّد', { preserveDiacritics: undefined }), 'محمد');
+
 for (var code = 1611; code < 1632; code += 1) {
-  assert.strictEqual(toPersian('ا' + String.fromCharCode(code) + 'ب'), 'اب');
+  var diacritic = String.fromCharCode(code);
+  assert.strictEqual(toPersian('ا' + diacritic + 'ب'), 'اب');
+  assert.strictEqual(toPersian('ي' + diacritic + 'ك', { preserveDiacritics: true }), 'ی' + diacritic + 'ک');
 }
 
 var englishCases = [
@@ -72,7 +84,22 @@ englishCases.forEach(function (testCase) {
   var input = testCase[0];
   var expected = testCase[1];
   assert.strictEqual(toEnglish(input), expected);
+  assert.strictEqual(toEnglish(input, {}), expected);
+  assert.strictEqual(toEnglish(input, { arabic: false }), expected);
+  assert.strictEqual(toEnglish(input, { arabic: undefined }), expected);
 });
+
+assert.strictEqual(toEnglish('٠١٢٣٤٥٦٧٨٩', { arabic: true }), '0123456789');
+assert.strictEqual(toEnglish('۱۲٣4', { arabic: true }), '1234');
+assert.strictEqual(toEnglish('مِي\u200cروم ۱۲٣4', { arabic: true }), 'مِي\u200cروم 1234');
+assert.strictEqual(toEnglish('hello 🌍 -١٢.٣', { arabic: true }), 'hello 🌍 -12.3');
+assert.strictEqual(toEnglish(123, { arabic: true }), '123');
+assert.strictEqual(toEnglish('', { arabic: true }), '');
+[null, undefined, false, true, 0, 1, '', 'unused', [], function () {}].forEach(function (options) {
+  assert.strictEqual(toEnglish('۱۲٣4', options), '12٣4');
+});
+assert.deepEqual(['۱۲٣4', '٥۶٧'].map(toEnglish), ['12٣4', '٥6٧']);
+assert.strictEqual(toEnglish.length, 1);
 
 var invalidInputs = [undefined, null, true, false, {}, [], function () {}, new String('123'), new Number(123)];
 if (typeof Symbol === 'function') {
@@ -82,7 +109,11 @@ if (typeof BigInt === 'function') {
   invalidInputs.push(BigInt(123));
 }
 invalidInputs.forEach(function (input) {
-  [toPersian, toEnglish].forEach(function (convert) {
+  [toPersian, toEnglish, function (input) {
+    return toPersian(input, { preserveDiacritics: true, preserveHalfSpace: true });
+  }, function (input) {
+    return toEnglish(input, { arabic: true });
+  }].forEach(function (convert) {
     assert.throws(function () { convert(input); }, function (error) {
       return error instanceof TypeError && error.message === 'INPUT_MUST_BE_NUMBER_OR_STRING';
     });
@@ -106,36 +137,43 @@ var persianDigits = '۰۱۲۳۴۵۶۷۸۹';
 [false, true].forEach(function (arabic) {
   [false, true].forEach(function (english) {
     [false, true].forEach(function (preserveHalfSpace) {
-      var expected = '';
-      for (var point = 0; point <= 65535; point += 1) {
-        var character = String.fromCharCode(point);
-        if (arabic) {
-          if ((point >= 1611 && point < 1632) || point === 8205 || (point === 8204 && !preserveHalfSpace)) {
-            continue;
+      [false, true].forEach(function (preserveDiacritics) {
+        var expected = '';
+        for (var point = 0; point <= 65535; point += 1) {
+          var character = String.fromCharCode(point);
+          if (arabic) {
+            if ((point >= 1611 && point < 1632 && !preserveDiacritics) || point === 8205 || (point === 8204 && !preserveHalfSpace)) {
+              continue;
+            }
+            if (character === 'ي' || character === 'ى') character = 'ی';
+            if (character === 'ك') character = 'ک';
+            var arabicIndex = arabicDigits.indexOf(character);
+            if (arabicIndex !== -1) character = persianDigits.charAt(arabicIndex);
           }
-          if (character === 'ي' || character === 'ى') character = 'ی';
-          if (character === 'ك') character = 'ک';
-          var arabicIndex = arabicDigits.indexOf(character);
-          if (arabicIndex !== -1) character = persianDigits.charAt(arabicIndex);
+          var englishIndex = englishDigits.indexOf(character);
+          if (english && englishIndex !== -1) character = persianDigits.charAt(englishIndex);
+          expected += character;
         }
-        var englishIndex = englishDigits.indexOf(character);
-        if (english && englishIndex !== -1) character = persianDigits.charAt(englishIndex);
-        expected += character;
-      }
-      var options = { arabic: arabic, english: english, preserveHalfSpace: preserveHalfSpace };
-      var actual = toPersian(allCharacters, options);
-      assert.strictEqual(actual, expected);
-      assert.strictEqual(toPersian(actual, options), actual);
+        var options = { arabic: arabic, english: english, preserveHalfSpace: preserveHalfSpace, preserveDiacritics: preserveDiacritics };
+        var actual = toPersian(allCharacters, options);
+        assert.strictEqual(actual, expected);
+        assert.strictEqual(toPersian(actual, options), actual);
+      });
     });
   });
 });
-var expectedEnglish = '';
-for (var point = 0; point <= 65535; point += 1) {
-  var character = String.fromCharCode(point);
-  var index = persianDigits.indexOf(character);
-  expectedEnglish += index === -1 ? character : englishDigits.charAt(index);
-}
-assert.strictEqual(toEnglish(allCharacters), expectedEnglish);
-assert.strictEqual(toEnglish(expectedEnglish), expectedEnglish);
+[false, true].forEach(function (arabic) {
+  var expectedEnglish = '';
+  for (var point = 0; point <= 65535; point += 1) {
+    var character = String.fromCharCode(point);
+    var index = persianDigits.indexOf(character);
+    if (arabic && index === -1) index = arabicDigits.indexOf(character);
+    expectedEnglish += index === -1 ? character : englishDigits.charAt(index);
+  }
+  var options = { arabic: arabic };
+  assert.strictEqual(toEnglish(allCharacters, options), expectedEnglish);
+  assert.strictEqual(toEnglish(expectedEnglish, options), expectedEnglish);
+  if (!arabic) assert.strictEqual(toEnglish(allCharacters), expectedEnglish);
+});
 assert.strictEqual(toEnglish(toPersian(englishDigits, { arabic: false })), englishDigits);
 console.log('All tests passed.');

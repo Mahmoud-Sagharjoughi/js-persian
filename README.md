@@ -17,6 +17,9 @@ npm install persian
 yarn add persian
 ```
 
+The new conversion options and included TypeScript definitions described below
+are part of the upcoming 1.1.0 release.
+
 ## Compatibility
 
 The published package uses ES5 CommonJS and has no runtime dependencies.
@@ -72,23 +75,55 @@ toPersian('مي‌روم'); // میروم
 toPersian('مي‌روم', { preserveHalfSpace: true }); // می‌روم
 ```
 
+### Preserving diacritics
+
+By default, `toPersian` removes diacritics in U+064B–U+065F when Arabic conversion
+is enabled. Use `preserveDiacritics` to keep them while still converting letters
+and digits:
+
+```javascript
+toPersian('عَلِي 123'); // علی ۱۲۳
+toPersian('عَلِي 123', { preserveDiacritics: true }); // عَلِی ۱۲۳
+```
+
+`preserveDiacritics` and `preserveHalfSpace` can be enabled together. When
+`arabic: false`, Arabic letters, digits, diacritics and joining characters are
+already left unchanged.
+
+Options for `toPersian`:
+
 | Option | Default | Behavior |
 | --- | --- | --- |
 | `arabic` | `true` | Convert Arabic letters and digits, and remove diacritics and joining characters. |
 | `english` | `true` | Convert English digits to Persian digits. |
 | `preserveHalfSpace` | `false` | Keep U+200C during Arabic conversion. |
+| `preserveDiacritics` | `false` | Keep U+064B–U+065F during Arabic conversion. |
 
-`toEnglish` converts Persian digits only. Both functions accept strings or numbers and return strings.
+### Converting Arabic digits to English
+
+`toEnglish` converts Persian digits by default. Set its `arabic` option to `true`
+to convert Arabic digits too; the default is `false`:
+
+```javascript
+toEnglish('۱۲٣4'); // 12٣4
+toEnglish('۱۲٣4', { arabic: true }); // 1234
+```
+
+This option changes digits only; letters, diacritics and half-spaces are kept.
+Both functions accept strings or numbers and return strings.
 
 ### TypeScript
 
 Type definitions are included in the package.
 
 ```typescript
-import { toPersian, ToPersianOptions } from 'persian';
+import { toPersian, toEnglish, ToPersianOptions, ToEnglishOptions } from 'persian';
 
-const options: ToPersianOptions = { preserveHalfSpace: true };
+const options: ToPersianOptions = { preserveHalfSpace: true, preserveDiacritics: true };
 const result: string = toPersian('مي‌روم 123', options);
+
+const englishOptions: ToEnglishOptions = { arabic: true };
+const digits: string = toEnglish('۱۲٣4', englishOptions);
 ```
 
 ___

@@ -3,10 +3,12 @@ function replaceAll(str, mapObj) {
   return str.replace(regex, key => mapObj[key]);
 }
 
-function replaceArabicToPersian(str, preserveHalfSpace) {
+function replaceArabicToPersian(str, preserveHalfSpace, preserveDiacritics) {
   let newStr = str;
-  for (let i = 1611; i < 1632; i += 1) {
-    newStr = newStr.replace(new RegExp(String.fromCharCode(i), 'g'), '');
+  if (!preserveDiacritics) {
+    for (let i = 1611; i < 1632; i += 1) {
+      newStr = newStr.replace(new RegExp(String.fromCharCode(i), 'g'), '');
+    }
   }
 
   const charMap = {
@@ -47,7 +49,7 @@ function replaceEnglishToPersian(str) {
   return replaceAll(str, charMap);
 }
 
-function replacePersianToEnglish(str) {
+function replacePersianToEnglish(str, arabic) {
   const charMap = {
     '۰': '0',
     '۱': '1',
@@ -60,6 +62,18 @@ function replacePersianToEnglish(str) {
     '۸': '8',
     '۹': '9',
   };
+  if (arabic) {
+    charMap['٠'] = '0';
+    charMap['١'] = '1';
+    charMap['٢'] = '2';
+    charMap['٣'] = '3';
+    charMap['٤'] = '4';
+    charMap['٥'] = '5';
+    charMap['٦'] = '6';
+    charMap['٧'] = '7';
+    charMap['٨'] = '8';
+    charMap['٩'] = '9';
+  }
   return replaceAll(str, charMap);
 }
 
@@ -67,13 +81,14 @@ function toPersian(input, {
   arabic = true,
   english = true,
   preserveHalfSpace = false,
+  preserveDiacritics = false,
 } = {}) {
   if (typeof input !== 'string' && typeof input !== 'number') {
     throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
   }
   let result = String(input);
   if (arabic) {
-    result = replaceArabicToPersian(result, preserveHalfSpace);
+    result = replaceArabicToPersian(result, preserveHalfSpace, preserveDiacritics);
   }
   if (english) {
     result = replaceEnglishToPersian(result);
@@ -81,11 +96,11 @@ function toPersian(input, {
   return result;
 }
 
-function toEnglish(input) {
+function toEnglish(input, options = {}) {
   if (typeof input !== 'string' && typeof input !== 'number') {
     throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
   }
-  return replacePersianToEnglish(String(input));
+  return replacePersianToEnglish(String(input), options && options.arabic);
 }
 
 module.exports = {
