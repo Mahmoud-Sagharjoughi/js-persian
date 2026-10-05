@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Build and verify package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.16.0'
+          package-manager-cache: false
+      - run: npm ci --ignore-scripts
+      - run: node_modules/.bin/eslint src/persian.js
+      - run: npm test
+      - run: npm pack --pack-destination "${{ runner.temp }}"
+      - run: node test/package.js "${{ runner.temp }}" "${{ runner.temp }}/consumer"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/persian-*.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  runtime:
+    name: Node ${{ matrix.node }} / ${{ matrix.os }}
+    needs: package
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        node:
+          - '0.10.48'
+          - '0.12.18'
+          - '4.0.0'
+          - '4.8.6'
+          - '4.9.1'
+          - '6.0.0'
+          - '6.12.0'
+          - '6.17.1'
+          - '8.0.0'
+          - '8.9.1'
+          - '8.17.0'
+          - '9.2.0'
+          - '10.24.1'
+          - '12.22.12'
+          - '14.21.3'
+          - '16.20.2'
+          - '18.20.8'
+          - '20.19.5'
+          - '22.23.3'
+          - '24.16.0'
+          - '26.10.0'
+        include:
+          - { os: windows-latest, node: '22.23.3' }
+          - { os: windows-latest, node: '24.16.0' }
+          - { os: windows-latest, node: '26.10.0' }
+          - { os: macos-latest, node: '22.23.3' }
+          - { os: macos-latest, node: '24.16.0' }
+          - { os: macos-latest, node: '26.10.0' }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.16.0'
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-package
+      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - run: node --version
+      - run: node "${{ runner.temp }}/consumer/test.js"
+      - name: Native ESM imports
+        if: ${{ !startsWith(matrix.node, '0.') && !startsWith(matrix.node, '4.') && !startsWith(matrix.node, '6.') && !startsWith(matrix.node, '8.') && !startsWith(matrix.node, '9.') && !startsWith(matrix.node, '10.') }}
+        run: node "${{ runner.temp }}/consumer/test.mjs"
+
+  types:
+    name: TypeScript ${{ matrix.typescript }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { typescript: '2.6.2', node: '8.9.1', mode: legacy }
+          - { typescript: '7.0.2', node: '24.16.0', mode: modern }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.16.0'
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-package
+      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer"
+      - run: npm install --prefix "${{ runner.temp }}/compiler" --ignore-scripts --no-audit --no-fund --save-exact typescript@${{ matrix.typescript }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - run: node test/types.js "${{ runner.temp }}/compiler/node_modules/typescript/bin/tsc" "${{ runner.temp }}/consumer" ${{ matrix.mode }}
