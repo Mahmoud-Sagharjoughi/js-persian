@@ -1,12 +1,18 @@
 {
   "name": "persian",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Persian(farsi) localization",
   "main": "dist/persian.js",
+  "types": "index.d.ts",
+  "files": [
+    "dist/persian.js",
+    "index.d.ts"
+  ],
   "scripts": {
     "build": "node_modules/.bin/babel src --out-dir dist",
-    "prepublish": "npm run build",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm test",
+    "test": "npm run build && node test/persian.test.js"
   },
   "author": "Mahmoud Sagharjoughi <mahmood.sa225@gmail.com>",
   "license": "Beerware",
@@ -29,10 +35,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mahmoud-Sagharjoughi/persian"
+    "url": "https://github.com/Mahmoud-Sagharjoughi/js-persian"
   },
   "bugs": {
-    "url": "https://github.com/Mahmoud-Sagharjoughi/persian/issues"
+    "url": "https://github.com/Mahmoud-Sagharjoughi/js-persian/issues"
   },
-  "homepage": "https://github.com/Mahmoud-Sagharjoughi/persian"
+  "homepage": "https://github.com/Mahmoud-Sagharjoughi/js-persian"
 }
