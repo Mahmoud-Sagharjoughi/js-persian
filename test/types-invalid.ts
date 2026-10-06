@@ -1,4 +1,4 @@
-import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian } from 'persian';
+import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian, persianDigits, persianLetters, unformatNumber, wordsToDigits } from 'persian';
 
 toPersian(true);
 toEnglish({});
@@ -23,3 +23,16 @@ createPersian().numberToWords(3, { ordinal: 'yes' });
 createPersian().toPersian(true);
 createPersian().formatNumber('1234', { separator: 0 });
 createPersian().switchKeyboard(123);
+
+persianDigits(true);
+persianLetters({});
+unformatNumber(123);
+unformatNumber('1,234', { separator: 0 });
+unformatNumber('123', null);
+wordsToDigits(123);
+wordsToDigits('سه', { ordinal: 'yes' });
+wordsToDigits('سه', null);
+createPersian({ wordsToDigits: { ordinal: 1 } });
+createPersian({ unformatNumber: { separator: false } });
+createPersian().wordsToDigits(123);
+createPersian().persianDigits(true);

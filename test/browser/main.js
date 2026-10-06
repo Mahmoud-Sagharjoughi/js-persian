@@ -1,4 +1,4 @@
-import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian } from 'persian';
+import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian, persianDigits, persianLetters, unformatNumber, wordsToDigits } from 'persian';
 
 var checks = 0;
 function equal(actual, expected) {
@@ -16,7 +16,7 @@ function rejects(action, type, message) {
 
 var result = document.getElementById('result');
 try {
-  [toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian].forEach(function (method) {
+  [toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian, persianDigits, persianLetters, unformatNumber, wordsToDigits].forEach(function (method) {
     equal(typeof method, 'function');
   });
   equal(toPersian('اردك علي ٤6٦'), 'اردک علی ۴۶۶');
@@ -78,6 +78,23 @@ try {
   rejects(function () { createPersian({ numberToWords: { ordinal: 'yes' } }); }, TypeError, 'OPTION_MUST_BE_BOOLEAN');
   equal(JSON.stringify(Object.getOwnPropertyNames(String.prototype)), JSON.stringify(window.stringProperties));
   equal(String.prototype.replaceAll, window.originalReplaceAll);
+  equal(persianDigits('عَلِي می\u200cرود 🌍 12٣'), 'عَلِي می\u200cرود 🌍 ۱۲۳');
+  equal(persianLetters('عَلِي می\u200cرود 🌍 12٣'), 'عَلِی می\u200cرود 🌍 12٣');
+  equal(unformatNumber('−۰۰۱٬۲۳۴٫۵۰'), '−۰۰۱۲۳۴٫۵۰');
+  equal(unformatNumber('1$&234', { separator: '$&' }), '1234');
+  equal(wordsToDigits('صد کوادریلیون و یک'), '100000000000000001');
+  equal(wordsToDigits('یک هزارم'), '0.001');
+  equal(wordsToDigits('یک هزارم', { ordinal: true }), '1000');
+  equal(wordsToDigits('صد ممیز پنج هزارم'), '100.005');
+  rejects(function () { wordsToDigits('صد و پنج هزارم'); }, TypeError, 'AMBIGUOUS_NUMBER_WORDS');
+  rejects(function () { wordsToDigits('یک دو'); }, TypeError, 'INVALID_NUMBER_WORDS');
+  rejects(function () { unformatNumber('1٬23'); }, TypeError, 'INVALID_NUMBER');
+  var reverse = createPersian({ unformatNumber: { separator: ',' }, wordsToDigits: { ordinal: true } });
+  equal(reverse.unformatNumber('1,234'), '1234');
+  equal(reverse.wordsToDigits('سوم'), '3');
+  equal(reverse.wordsToDigits('یک هزارم', { ordinal: false }), '0.001');
+  equal(reverse.persianDigits('علي 12٣'), 'علي ۱۲۳');
+  equal(reverse.persianLetters('علي 12٣'), 'علی 12٣');
   result.textContent = checks + ' browser checks passed.';
   result.dataset.checks = String(checks);
   result.dataset.status = 'passed';

@@ -35,3 +35,16 @@ const t: string = instance.switchKeyboard('google');
 const u: string[] = [1, 2, 3].map(instance.numberToWords);
 const cardinals: string[] = [1, 2, 3].map(numberToWords);
 const v: string = persian.createPersian().numberToWords('0.01');
+
+const onlyDigits: string = persian.persianDigits('علي 12٣');
+const onlyLetters: string = persian.persianLetters(123);
+const unformatted: string = persian.unformatNumber('1,234', formatOptions);
+const parsed: string = persian.wordsToDigits('سوم', { ordinal: true });
+const parserOptions: persian.WordsToDigitsOptions = { ordinal: true };
+const reverseConfig: PersianConfig = { wordsToDigits: parserOptions, unformatNumber: formatOptions };
+const reverse = createPersian(reverseConfig);
+const reverseResults: string[] = ['سوم'].map(reverse.wordsToDigits);
+const parsedResults: string[] = ['سه'].map(persian.wordsToDigits);
+const instanceDigits: string = reverse.persianDigits(123);
+const instanceLetters: string = reverse.persianLetters('علي');
+const instanceNumber: string = reverse.unformatNumber('1,234');

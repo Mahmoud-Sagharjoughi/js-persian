@@ -56,7 +56,7 @@ fs.copyFileSync(path.join(__dirname, 'types-valid.ts'), path.join(consumer, 'typ
 fs.copyFileSync(path.join(__dirname, 'types-invalid.ts'), path.join(consumer, 'types-invalid.ts'));
 fs.writeFileSync(path.join(consumer, 'test.mjs'), [
   "import assert from 'assert';",
-  "import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian } from 'persian';",
+  "import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian, persianDigits, persianLetters, unformatNumber, wordsToDigits } from 'persian';",
   "assert.strictEqual(toPersian('123'), '۱۲۳');",
   "assert.strictEqual(toPersian('مي\\u200cروم', { preserveHalfSpace: true }), 'می\\u200cروم');",
   "assert.strictEqual(toEnglish('۱۲۳'), '123');",
@@ -70,6 +70,12 @@ fs.writeFileSync(path.join(consumer, 'test.mjs'), [
   "assert.strictEqual(fa.toEnglish('٣'), '3');",
   "assert.strictEqual(fa.numberToWords(3), 'سوم');",
   "assert.strictEqual(fa.numberToWords(3, { ordinal: false }), 'سه');",
+  "assert.strictEqual(persianDigits('علي 12٣'), 'علي ۱۲۳');",
+  "assert.strictEqual(persianLetters('علي 12٣'), 'علی 12٣');",
+  "assert.strictEqual(unformatNumber('۱٬۲۳۴٫۵۰'), '۱۲۳۴٫۵۰');",
+  "assert.strictEqual(wordsToDigits('سه هزار و دوازده'), '3012');",
+  "assert.strictEqual(wordsToDigits('سوم', { ordinal: true }), '3');",
+  "assert.strictEqual(wordsToDigits('صد ممیز پنج هزارم'), '100.005');",
   "console.log('Native ESM imports passed.');",
 ].join('\n'));
 console.log('Package contents verified: ' + metadata.name + '@' + metadata.version);

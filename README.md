@@ -47,7 +47,7 @@ checks that installation adds no runtime dependencies. Each runtime also runs
 the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2. Separate browser jobs
-test all six named imports with Vite in development and production on Chromium,
+test all ten named imports with Vite in development and production on Chromium,
 Firefox and WebKit, using the same npm archive.
 
 Yarn consumer jobs install that archive with Yarn 1.3.2 on Node.js 8.9.1,
@@ -195,6 +195,22 @@ toEnglish('۱۲٣4', { arabic: true }); // 1234
 This option changes digits only; letters, diacritics and half-spaces are kept.
 Both functions accept strings or numbers and return strings.
 
+### Converting only digits or letters
+
+`persianDigits` converts English and Arabic digits to Persian digits without
+changing letters, diacritics, half-spaces, joining characters or punctuation.
+`persianLetters` converts only `ي`, `ى` and `ك` to `ی`, `ی` and `ک`:
+
+```javascript
+import { persianDigits, persianLetters } from 'persian';
+
+persianDigits('عَلِي می‌رود 12٣'); // عَلِي می‌رود ۱۲۳
+persianLetters('عَلِي می‌رود 12٣'); // عَلِی می‌رود 12٣
+```
+
+Both accept strings or numbers and return strings. These additional helpers leave
+`toPersian` and its existing defaults unchanged.
+
 ### Formatting numbers
 
 `formatNumber` groups the integer part in threes. It preserves the input's digit
@@ -212,6 +228,29 @@ formatNumber('9007199254740993'); // 9٬007٬199٬254٬740٬993
 
 `separator` must be a nonempty string without digits, signs or decimal separators.
 It is inserted literally, including characters such as `$`.
+
+### Removing number formatting
+
+`unformatNumber` removes the specified thousands separator from a numeric string.
+It preserves the sign, digit characters, decimal separator, leading zeros and
+fractional trailing zeros. Its `separator` option follows `formatNumber`, with
+`٬` as the default:
+
+```javascript
+import { unformatNumber } from 'persian';
+
+unformatNumber('−۰۰۱٬۲۳۴٫۵۰'); // −۰۰۱۲۳۴٫۵۰
+unformatNumber('9,007,199,254,740,993', { separator: ',' }); // 9007199254740993
+unformatNumber('1$&234', { separator: '$&' }); // 1234
+```
+
+Ungrouped numeric strings are accepted. Grouped integers must have one to three
+digits in the first group and exactly three in every later group. Empty groups,
+misplaced separators and other invalid numeric syntax throw
+`TypeError('INVALID_NUMBER')`. Separators are matched literally, including
+multicharacter separators. This function accepts strings only; its options must
+be an object when supplied. For any valid numeric string passed to `formatNumber` with the same separator,
+unformatting the formatted result preserves the original numeric string.
 
 ### Numbers to Persian words
 
@@ -259,6 +298,59 @@ existing string representation. Nonfinite numbers throw
 ordinary decimal notation. `formatNumber` has no digit limit for strings;
 `numberToWords` throws `RangeError('NUMBER_OUT_OF_RANGE')` beyond its limits.
 
+### Persian words to digit strings
+
+`wordsToDigits` reads Persian number words into an English digit string. It uses
+three-digit groups rather than JavaScript numeric arithmetic for large integers,
+so integers through 18 digits remain exact. Decimals support up to 12
+fractional places after removing trailing zeros. Leading integer zeros, fractional trailing zeros and negative
+zero are normalized.
+
+```javascript
+import { wordsToDigits } from 'persian';
+
+wordsToDigits('سه هزار دویست و دوازده'); // 3212
+wordsToDigits('منفی یک میلیون'); // -1000000
+wordsToDigits('صد کوادریلیون و یک'); // 100000000000000001
+wordsToDigits('دوازده و پنج دهم'); // 12.5
+wordsToDigits('صفر ممیز صفر صفر یک'); // 0.001
+```
+
+Hundreds, tens and units use `و` between parts. Scale words must descend without
+repetition; `و` between scale groups is optional, and a bare scale such as `هزار`
+means one thousand. `یکصد` is accepted alongside `صد`. Whitespace is normalized,
+Arabic `ي`, `ى` and `ك` are converted, and U+064B–U+065F diacritics are removed
+for parsing. Other unknown words, digits, punctuation and malformed phrases are
+rejected with `TypeError('INVALID_NUMBER_WORDS')`; spelling is not guessed.
+
+Use `ordinal: true` for integer ordinals, including `اول`, `یکم`, `سوم` and the
+forms produced by `numberToWords`. The default is cardinal/fractional reading:
+
+```javascript
+wordsToDigits('یک هزارم'); // 0.001
+wordsToDigits('یک هزارم', { ordinal: true }); // 1000
+wordsToDigits('بیست و سوم', { ordinal: true }); // 23
+```
+
+Some fractional phrases are ambiguous. `صد و پنج هزارم` can mean either `0.105`
+or `100.005`, so it throws `TypeError('AMBIGUOUS_NUMBER_WORDS')`. Use `ممیز` to
+separate the whole and fractional parts explicitly:
+
+```javascript
+wordsToDigits('صد ممیز پنج هزارم'); // 100.005
+wordsToDigits('صفر ممیز صد و پنج هزارم'); // 0.105
+```
+
+After `ممیز`, use either individual digit words or a numerator followed by one
+of the fraction names used by `numberToWords` (`دهم` through `تریلیونیم`). An
+ordinary fractional phrase is accepted only when it has one numeric reading.
+Consequently, integer words round-trip directly; decimal words may need an explicit
+`ممیز`. Ordinal mode requires an ordinal ending and accepts no fractions.
+Parsing accepts strings only, limits phrases to 80 words and never ignores unknown
+words. More than 12 fractional places after removing trailing zeros from digit-by-digit
+`ممیز` throws
+`RangeError('NUMBER_OUT_OF_RANGE')`. Ordinal mode activates only for boolean `true`.
+
 ### Switching keyboard layouts
 
 `switchKeyboard` converts the letter positions of the unshifted Persian Standard
@@ -285,7 +377,7 @@ These utilities are additional exports; existing conversion defaults are unchang
 ### Reusing settings
 
 Use `createPersian` to set defaults once for an application or module. It returns
-all five conversion methods, with the same inputs and outputs as the individual
+all nine conversion methods, with the same inputs and outputs as the individual
 exports:
 
 ```javascript
@@ -295,6 +387,8 @@ const fa = createPersian({
   toPersian: { preserveHalfSpace: true, preserveDiacritics: true },
   toEnglish: { arabic: true },
   formatNumber: { separator: ',' },
+  unformatNumber: { separator: ',' },
+  wordsToDigits: { ordinal: true },
   numberToWords: { ordinal: true },
   switchKeyboard: { direction: 'toPersian' },
 });
@@ -304,6 +398,10 @@ fa.toEnglish('۱۲٣'); // 123
 fa.formatNumber('1234'); // 1,234
 fa.numberToWords(3); // سوم
 fa.switchKeyboard('google'); // لخخلمث
+fa.unformatNumber('1,234'); // 1234
+fa.wordsToDigits('سوم'); // 3
+fa.persianDigits('علي 12٣'); // علي ۱۲۳
+fa.persianLetters('علي 12٣'); // علی 12٣
 
 fa.numberToWords(3, { ordinal: false }); // سه
 fa.toPersian('مي‌روم 123', { english: false }); // می‌روم 123
@@ -332,7 +430,7 @@ in the configuration throw `TypeError('UNKNOWN_OPTION')`.
 ### TypeScript
 
 Type definitions are included for every export, including `NumberToWordsOptions`,
-`PersianConfig` and `PersianInstance`.
+`WordsToDigitsOptions`, `PersianConfig` and `PersianInstance`.
 
 ```typescript
 import { toPersian, toEnglish, ToPersianOptions, ToEnglishOptions } from 'persian';
