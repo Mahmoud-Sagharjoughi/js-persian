@@ -6,7 +6,8 @@
   "types": "index.d.ts",
   "files": [
     "dist/persian.js",
-    "index.d.ts"
+    "index.d.ts",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "node_modules/.bin/babel src --out-dir dist",
