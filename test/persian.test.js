@@ -70,6 +70,16 @@ for (var code = 1611; code < 1632; code += 1) {
   assert.strictEqual(toPersian('ي' + diacritic + 'ك', { preserveDiacritics: true }), 'ی' + diacritic + 'ک');
 }
 
+var consecutiveMarks = '\u064b\u064c\u064d\u064e\u064f\u0650\u0651\u0652\u0653\u0654\u0655\u0656\u0657\u0658\u0659\u065a\u065b\u065c\u065d\u065e\u065f';
+var markBoundaries = '\u064a' + consecutiveMarks + '\u0660';
+assert.strictEqual(toPersian(consecutiveMarks + consecutiveMarks), '');
+assert.strictEqual(toPersian(markBoundaries), 'ی۰');
+assert.strictEqual(toPersian(markBoundaries, { preserveDiacritics: true }), 'ی' + consecutiveMarks + '۰');
+assert.strictEqual(toPersian(markBoundaries, { arabic: false, english: false }), markBoundaries);
+var repeatedMarks = new Array(513).join('🌍ا' + consecutiveMarks + 'ب\u200c\n');
+assert.strictEqual(toPersian(repeatedMarks), new Array(513).join('🌍اب\n'));
+assert.strictEqual(toPersian(repeatedMarks, { preserveDiacritics: true, preserveHalfSpace: true }), repeatedMarks);
+
 var englishCases = [
   ['', ''],
   ['۷۶۳۲۴۵', '763245'],
