@@ -12,16 +12,20 @@
     "build": "node_modules/.bin/babel src --out-dir dist",
     "prepare": "npm run build",
     "prepublishOnly": "npm test",
-    "test": "npm run build && node test/persian.test.js"
+    "test": "npm run build && node test/persian.test.js",
+    "lint": "node_modules/.bin/eslint src/persian.js"
   },
   "author": "Mahmoud Sagharjoughi <mahmood.sa225@gmail.com>",
   "license": "Beerware",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
-    "eslint": "^4.14.0",
-    "eslint-config-airbnb-base": "^12.1.0",
-    "eslint-plugin-import": "^2.8.0"
+    "@babel/cli": "^8.0.6",
+    "@babel/core": "^8.0.6",
+    "@babel/preset-env": "^8.0.6",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "acorn": "^8.19.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-import-x": "^4.17.1",
+    "globals": "^17.13.0"
   },
   "keywords": [
     "persian",

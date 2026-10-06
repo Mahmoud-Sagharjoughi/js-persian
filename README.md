@@ -27,15 +27,19 @@ The release artifact has been tested on Node.js 0.10.48, 0.12.18, 4.0.0, 4.8.6,
 4.9.1, 6.0.0, 6.12.0, 6.17.1, 8.0.0, 8.9.1, 8.17.0, 9.2.0, 10.24.1,
 12.22.12, 14.21.3, 16.20.2, 18.20.8, 20.19.5, 22.23.3, 24.16.0 and 26.10.0.
 
-Run `npm test` to build the package and run the regression tests. The tests cover
-conversion options, half-spaces, numeric boundaries, keyboard layouts, invalid
+Building from source requires Node.js 22.18 or later in the 22.x line, or Node.js
+24.11 or later. This requirement applies to development tools; the published
+package retains the runtime compatibility listed above.
+
+Run `npm run lint` to check the source style and `npm test` to build the package
+and run the regression tests. The tests cover conversion options, half-spaces, numeric boundaries, keyboard layouts, invalid
 inputs, unchanged `String.prototype`, and all 65,536 UTF-16 code units across
 every combination of conversion options.
 
 CI builds one npm archive and tests that archive on the Node.js versions above
 on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. It also checks native
-ESM imports on Node.js 12 and later, package contents, and valid and invalid
-TypeScript usage with TypeScript 2.6.2 and 7.0.2.
+ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
+and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2.
 
 ## Examples
 
