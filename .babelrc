@@ -1,4 +1,15 @@
 {
-  "presets": ["es2015"]
+  "targets": {
+    "node": "0.10",
+    "ie": "11"
+  },
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "modules": "commonjs",
+        "forceAllTransforms": true
+      }
+    ]
+  ]
 }
-  
