@@ -44,7 +44,7 @@ checks that installation adds no runtime dependencies. Each runtime also runs
 the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2. Separate browser jobs
-test all five named imports with Vite in development and production on Chromium,
+test all six named imports with Vite in development and production on Chromium,
 Firefox and WebKit, using the same npm archive.
 
 ## Browser tests
@@ -204,6 +204,21 @@ the fractional part supports up to 12 decimal places after removing trailing
 zeros. Leading zeros and negative zero are normalized. A whole number followed
 only by fractional zeros is read as a whole number.
 
+Set `ordinal: true` to read an integer as an ordinal. The default remains cardinal:
+
+```javascript
+numberToWords(1, { ordinal: true }); // یکم
+numberToWords(3, { ordinal: true }); // سوم
+numberToWords('۳۰', { ordinal: true }); // سی‌ام
+numberToWords(23, { ordinal: true }); // بیست و سوم
+numberToWords('-3.000', { ordinal: true }); // منفی سوم
+```
+
+Zero is `صفرم`; only the last word of a compound number becomes ordinal.
+Fractional zeros are accepted, but a nonzero fraction with `ordinal: true` throws
+`RangeError('ORDINAL_REQUIRES_INTEGER')`. Set `ordinal: false` to keep cardinal
+words, including decimals. Ordinal conversion activates only for boolean `true`.
+
 Both numeric utilities accept strings or numbers. Strings must contain an optional
 `+`, `-` or `−` (U+2212), one or more digits, and optionally `.` or `٫` (U+066B)
 followed by one or more digits. Spaces, existing grouping separators and string
@@ -235,13 +250,61 @@ Digits, uppercase English letters, shifted symbols, half-spaces, emoji and other
 unmapped characters stay unchanged. This function accepts strings only and
 converts in the requested direction without guessing the input's language.
 
-For the two utilities with options, `options` must be an object when provided.
+For `formatNumber` and `switchKeyboard`, `options` must be an object when provided.
 An invalid separator or direction throws a `TypeError`.
 These utilities are additional exports; existing conversion defaults are unchanged.
 
+### Reusing settings
+
+Use `createPersian` to set defaults once for an application or module. It returns
+all five conversion methods, with the same inputs and outputs as the individual
+exports:
+
+```javascript
+import { createPersian } from 'persian';
+
+const fa = createPersian({
+  toPersian: { preserveHalfSpace: true, preserveDiacritics: true },
+  toEnglish: { arabic: true },
+  formatNumber: { separator: ',' },
+  numberToWords: { ordinal: true },
+  switchKeyboard: { direction: 'toPersian' },
+});
+
+fa.toPersian('مي‌روم 123'); // می‌روم ۱۲۳
+fa.toEnglish('۱۲٣'); // 123
+fa.formatNumber('1234'); // 1,234
+fa.numberToWords(3); // سوم
+fa.switchKeyboard('google'); // لخخلمث
+
+fa.numberToWords(3, { ordinal: false }); // سه
+fa.toPersian('مي‌روم 123', { english: false }); // می‌روم 123
+```
+
+Share this instance through your own module if several parts of your application
+use the same settings. Each instance is independent, and the individual exports
+keep their original defaults. `createPersian()` uses those original defaults too.
+Methods can also be used without binding them to the instance:
+
+```javascript
+[1, 2, 3].map(fa.numberToWords); // ['یکم', 'دوم', 'سوم']
+```
+
+Options supplied to a method override only those fields for that call. An omitted
+or `undefined` field inherits the instance default; an explicit `false` overrides
+`true`. Configuration values are copied when the instance is created, so changing
+the original configuration afterward has no effect. Only own properties are used
+for configuration and per-call overrides.
+
+The configuration and its method groups must be objects. Defaults for boolean
+options must be booleans; separators and directions follow their usual validation.
+Invalid configuration values throw `TypeError`. Unknown method or option names
+in the configuration throw `TypeError('UNKNOWN_OPTION')`.
+
 ### TypeScript
 
-Type definitions are included in the package.
+Type definitions are included for every export, including `NumberToWordsOptions`,
+`PersianConfig` and `PersianInstance`.
 
 ```typescript
 import { toPersian, toEnglish, ToPersianOptions, ToEnglishOptions } from 'persian';

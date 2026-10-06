@@ -7,7 +7,8 @@
 - `preserveHalfSpace` and `preserveDiacritics` options for `toPersian`.
 - Optional Arabic digit conversion in `toEnglish` with `{ arabic: true }`.
 - `formatNumber` for grouping numeric strings without losing precision or digit style.
-- `numberToWords` for Persian integer and decimal words.
+- `numberToWords` for Persian integer and decimal words, with optional integer ordinals.
+- `createPersian` for independent instances with reusable defaults and per-call overrides.
 - `switchKeyboard` for Persian Standard and English QWERTY letter positions.
 - TypeScript definitions for all exports and options.
 - Conversion benchmarks for short and long inputs.
