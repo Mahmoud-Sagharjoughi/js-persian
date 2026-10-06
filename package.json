@@ -6,14 +6,15 @@
   "types": "index.d.ts",
   "files": [
     "dist/persian.js",
+    "dist/persian.browser.js",
     "index.d.ts",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "node_modules/.bin/babel src --out-dir dist",
+    "build": "node_modules/.bin/babel src --out-dir dist && node scripts/build-browser.js",
     "prepare": "npm run build",
     "prepublishOnly": "npm test",
-    "test": "npm run build && node test/persian.test.js",
+    "test": "npm run build && node test/persian.test.js && node test/standalone.js",
     "lint": "node_modules/.bin/eslint src/persian.js",
     "benchmark": "node benchmark/to-persian.js",
     "test:browser": "node test/browser/run.mjs"

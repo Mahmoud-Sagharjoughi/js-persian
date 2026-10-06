@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, build, preview } from 'vite';
 import { chromium, firefox, webkit } from 'playwright';
+import { verifyStandalone } from './standalone.mjs';
 
 const consumer = path.resolve(process.argv[2] || '');
 const name = process.argv[3] || 'chromium';
@@ -46,6 +47,8 @@ async function verify(server, mode) {
 }
 try {
   browser = await engine.launch();
+  console.log(name + ' version: ' + browser.version());
+  await verifyStandalone(browser, consumer, fixtures, name);
   process.env.NODE_ENV = 'development';
   dev = await createServer({ ...config, server: { host: '127.0.0.1', port: 0, hmr: false } });
   await dev.listen();

@@ -38,6 +38,7 @@ assert.deepEqual(fs.readdirSync(target).sort(), [
 ]);
 assert.strictEqual(require.resolve('persian'), path.join(target, 'dist', 'persian.js'));
 assert.ok(fs.statSync(path.join(target, metadata.types)).isFile());
+assert.deepEqual(fs.readdirSync(path.join(target, 'dist')).sort(), ['persian.browser.js', 'persian.js']);
 assert.strictEqual(require('./package.json').dependencies.persian,
   mode === 'node-modules' || mode === 'pnp' ? 'file:./persian.tgz' : 'file:persian.tgz');
 console.log(mode + ' installation verified: ' + metadata.name + '@' + metadata.version);
