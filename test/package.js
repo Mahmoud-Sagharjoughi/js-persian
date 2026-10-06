@@ -30,12 +30,15 @@ fs.copyFileSync(path.join(__dirname, 'types-valid.ts'), path.join(consumer, 'typ
 fs.copyFileSync(path.join(__dirname, 'types-invalid.ts'), path.join(consumer, 'types-invalid.ts'));
 fs.writeFileSync(path.join(consumer, 'test.mjs'), [
   "import assert from 'assert';",
-  "import { toPersian, toEnglish } from 'persian';",
+  "import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard } from 'persian';",
   "assert.strictEqual(toPersian('123'), '۱۲۳');",
   "assert.strictEqual(toPersian('مي\\u200cروم', { preserveHalfSpace: true }), 'می\\u200cروم');",
   "assert.strictEqual(toEnglish('۱۲۳'), '123');",
   "assert.strictEqual(toEnglish('۱۲٣4', { arabic: true }), '1234');",
   "assert.strictEqual(toPersian('عَلِي', { preserveDiacritics: true }), 'عَلِی');",
+  "assert.strictEqual(formatNumber('۱۲۳۴'), '۱٬۲۳۴');",
+  "assert.strictEqual(numberToWords('۱۲۳'), 'صد و بیست و سه');",
+  "assert.strictEqual(switchKeyboard('لخخلمث'), 'google');",
   "console.log('Native ESM imports passed.');",
 ].join('\n'));
 console.log('Package contents verified: ' + metadata.name + '@' + metadata.version);
