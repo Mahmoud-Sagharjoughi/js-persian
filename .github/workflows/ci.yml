@@ -110,6 +110,7 @@ jobs:
         run: npm install ./persian.tgz --save
       - run: node "${{ runner.temp }}/consumer/installed.js"
       - run: node "${{ runner.temp }}/consumer/test.js"
+      - run: node "${{ runner.temp }}/consumer/standalone.js" "${{ runner.temp }}/consumer"
       - run: node "${{ runner.temp }}/consumer/benchmark.js"
       - name: Native ESM imports
         if: ${{ !startsWith(matrix.node, '0.') && !startsWith(matrix.node, '4.') && !startsWith(matrix.node, '6.') && !startsWith(matrix.node, '8.') && !startsWith(matrix.node, '9.') && !startsWith(matrix.node, '10.') }}
@@ -147,7 +148,7 @@ jobs:
       - run: node test/types.js "${{ runner.temp }}/compiler/node_modules/typescript/bin/tsc" "${{ runner.temp }}/consumer" ${{ matrix.mode }}
 
   browser:
-    name: Vite / ${{ matrix.browser }}
+    name: Browser / ${{ matrix.browser }}
     needs: package
     runs-on: ubuntu-latest
     timeout-minutes: 10

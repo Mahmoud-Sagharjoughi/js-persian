@@ -1,3 +1,5 @@
+export as namespace persian;
+
 export interface ToPersianOptions {
   arabic?: boolean;
   english?: boolean;

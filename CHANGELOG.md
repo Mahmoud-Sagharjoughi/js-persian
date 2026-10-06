@@ -4,6 +4,10 @@
 
 ### Added
 
+- A standalone ES5 `dist/persian.browser.js` build for script tags and classic Web Workers.
+- Global `persian` TypeScript definitions for browser scripts.
+- Full standalone regressions for direct loading, deferred scripts, reloads and host module globals.
+
 - `preserveHalfSpace` and `preserveDiacritics` options for `toPersian`.
 - Optional Arabic digit conversion in `toEnglish` with `{ arabic: true }`.
 - `formatNumber` for grouping numeric strings without losing precision or digit style.

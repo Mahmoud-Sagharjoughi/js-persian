@@ -17,8 +17,45 @@ npm install persian
 yarn add persian
 ```
 
-The new conversion options, number and keyboard utilities, and TypeScript definitions below
+The standalone browser build, new conversion options, number and keyboard
+utilities, and TypeScript definitions below
 are part of the upcoming 1.1.0 release. See [CHANGELOG.md](CHANGELOG.md) for changes.
+
+### Using a script tag
+
+The upcoming 1.1.0 package includes `dist/persian.browser.js`. Copy that file
+from the installed package to your website and load it before your application:
+
+```html
+<p id="amount"></p>
+<script src="/js/persian.browser.js"></script>
+<script>
+  document.getElementById('amount').textContent = persian.toPersian('1234');
+</script>
+```
+
+This standalone ES5 file exposes all ten exports as `window.persian`, including
+`createPersian` for reusable defaults. It requires no bundler, module loader or
+runtime dependencies. It also works in classic Web Workers:
+
+```js
+importScripts('/js/persian.browser.js');
+self.postMessage(persian.toPersian('1234'));
+```
+
+Use ordinary script tags in the order shown, or use `defer` on both external
+scripts. An inline script following a deferred library does not wait for it.
+The file assigns the global name `persian`; loading it again replaces that
+reference with a fresh API object. Previously saved instances remain usable.
+Host `module`, `exports`, `require` and `define` globals are left untouched.
+Existing CommonJS and ESM imports continue to use `dist/persian.js`.
+In a TypeScript script that uses the browser global, include the package types
+and compile as a script (`moduleDetection: "legacy"` on current TypeScript):
+
+```ts
+/// <reference types="persian" />
+var text: string = persian.toPersian('1234');
+```
 
 ## Compatibility
 
@@ -48,7 +85,11 @@ the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2. Separate browser jobs
 test all ten named imports with Vite in development and production on Chromium,
-Firefox and WebKit, using the same npm archive.
+Firefox and WebKit, using the same npm archive. The same engines also load the
+standalone file directly with ordinary and deferred script tags, and run the
+full regression suite in both pages and classic Web Workers. These checks cover
+repeated loading, host module globals, global leakage and unchanged built-in
+prototypes under a Content Security Policy that disallows inline scripts and eval.
 
 Yarn consumer jobs install that archive with Yarn 1.3.2 on Node.js 8.9.1,
 Yarn 1.22.22 on Node.js 24.16.0, and Yarn 4.18.1 on Node.js 24.16.0 using both
@@ -97,7 +138,9 @@ On Linux, Playwright may require system browser dependencies; use its
 `install --with-deps` option when needed. These tests check conversion defaults
 and options, Unicode, numeric precision, keyboard mapping, rejected inputs and
 unchanged `String.prototype`. They cover the installed Playwright browser engines,
-not historical browser versions. Test tools and fixtures are excluded from the
+not historical browser versions. ES5 syntax does not establish compatibility
+with every older browser; the tested standalone environments are the Playwright
+engines above. Test tools and fixtures are excluded from the
 published package.
 
 ## Benchmarks

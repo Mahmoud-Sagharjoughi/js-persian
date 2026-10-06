@@ -10,7 +10,7 @@ var archives = fs.readdirSync(archiveDirectory).filter(function (file) {
 });
 assert.strictEqual(archives.length, 1, 'Expected one npm package');
 var archive = fs.readFileSync(path.join(archiveDirectory, archives[0]));
-var expectedFiles = ['CHANGELOG.md', 'LICENSE', 'README.md', 'dist/persian.js', 'index.d.ts', 'package.json'];
+var expectedFiles = ['CHANGELOG.md', 'LICENSE', 'README.md', 'dist/persian.js', 'dist/persian.browser.js', 'index.d.ts', 'package.json'];
 var entries = execFileSync('tar', ['-tzf', '-'], { input: archive, encoding: 'utf8' }).trim().split(/\r?\n/);
 assert.deepEqual(entries.sort(), expectedFiles.map(function (file) { return 'package/' + file; }).sort());
 
@@ -36,12 +36,16 @@ assert.strictEqual(metadata.name, 'persian');
 assert.strictEqual(metadata.version, require('../package.json').version);
 assert.strictEqual(metadata.main, 'dist/persian.js');
 assert.strictEqual(metadata.types, 'index.d.ts');
+assert.deepEqual(metadata.files, ['dist/persian.js', 'dist/persian.browser.js', 'index.d.ts', 'CHANGELOG.md']);
 assert.deepEqual(Object.keys(metadata.dependencies || {}), []);
 
 var benchmark = fs.readFileSync(path.join(__dirname, '../benchmark/to-persian.js'), 'utf8');
 if (process.argv[4] === '--check-syntax') {
   var parse = require('acorn').parse;
   parse(fs.readFileSync(path.join(target, metadata.main), 'utf8'), { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(target, 'dist/persian.browser.js'), 'utf8'), { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(__dirname, 'standalone.js'), 'utf8'), { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(__dirname, 'browser/assert.js'), 'utf8'), { ecmaVersion: 5 });
   parse(benchmark, { ecmaVersion: 5 });
   parse(fs.readFileSync(path.join(__dirname, 'installed.js'), 'utf8'), { ecmaVersion: 5 });
   parse(fs.readFileSync(path.join(__dirname, 'persian.test.js'), 'utf8'), { ecmaVersion: 5 });
@@ -52,8 +56,13 @@ fs.writeFileSync(path.join(consumer, 'benchmark.js'), benchmark.replace(/require
 
 var regression = fs.readFileSync(path.join(__dirname, 'persian.test.js'), 'utf8');
 fs.writeFileSync(path.join(consumer, 'test.js'), regression.replace(/require\('\.\.\/'\)/g, "require('persian')"));
+fs.copyFileSync(path.join(__dirname, 'types-browser.ts'), path.join(consumer, 'types-browser.ts'));
 fs.copyFileSync(path.join(__dirname, 'types-valid.ts'), path.join(consumer, 'types-valid.ts'));
 fs.copyFileSync(path.join(__dirname, 'types-invalid.ts'), path.join(consumer, 'types-invalid.ts'));
+var browserInvalid = fs.readFileSync(path.join(__dirname, 'types-invalid.ts'), 'utf8')
+  .replace(/^import [^\n]+/, '/// <reference types="persian" />')
+  .replace(/^([a-zA-Z]+)\(/gm, 'persian.$1(');
+fs.writeFileSync(path.join(consumer, 'types-browser-invalid.ts'), browserInvalid);
 fs.writeFileSync(path.join(consumer, 'test.mjs'), [
   "import assert from 'assert';",
   "import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian, persianDigits, persianLetters, unformatNumber, wordsToDigits } from 'persian';",
@@ -79,3 +88,5 @@ fs.writeFileSync(path.join(consumer, 'test.mjs'), [
   "console.log('Native ESM imports passed.');",
 ].join('\n'));
 console.log('Package contents verified: ' + metadata.name + '@' + metadata.version);
+
+fs.copyFileSync(path.join(__dirname, 'standalone.js'), path.join(consumer, 'standalone.js'));
