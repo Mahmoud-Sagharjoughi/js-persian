@@ -182,6 +182,212 @@ function numberToWords(input, options = {}) {
   return (parts.sign !== '+' && parts.sign && (integer !== '0' || fraction) ? 'منفی ' : '') + result;
 }
 
+function persianDigits(input) {
+  if (typeof input !== 'string' && typeof input !== 'number') {
+    throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
+  }
+  return String(input).replace(/[0-9٠-٩]/g, (character) => {
+    const code = character.charCodeAt(0);
+    return '۰۱۲۳۴۵۶۷۸۹'.charAt(code >= 1632 ? code - 1632 : code - 48);
+  });
+}
+
+function persianLetters(input) {
+  if (typeof input !== 'string' && typeof input !== 'number') {
+    throw new TypeError('INPUT_MUST_BE_NUMBER_OR_STRING');
+  }
+  return String(input).replace(/[يىك]/g, character => (character === 'ك' ? 'ک' : 'ی'));
+}
+
+function unformatNumber(input, options = {}) {
+  if (typeof input !== 'string') throw new TypeError('INPUT_MUST_BE_STRING');
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('OPTIONS_MUST_BE_OBJECT');
+  }
+  const separator = options.separator === undefined ? '٬' : options.separator;
+  if (typeof separator !== 'string' || !separator || /[0-9۰-۹٠-٩+\-−.٫]/.test(separator)) {
+    throw new TypeError('INVALID_SEPARATOR');
+  }
+  const parts = /^([+\-−]?)([^.٫]+)([.٫][0-9۰-۹٠-٩]+)?$/.exec(input);
+  if (!parts || parts[0].length !== input.length) throw new TypeError('INVALID_NUMBER');
+  const groups = parts[2].split(separator);
+  groups.forEach((group, index) => {
+    if (!/^[0-9۰-۹٠-٩]+$/.test(group) || /[^0-9۰-۹٠-٩]/.test(group)
+      || (groups.length > 1 && (index ? group.length !== 3 : group.length > 3))) {
+      throw new TypeError('INVALID_NUMBER');
+    }
+  });
+  return parts[1] + groups.join('') + (parts[3] || '');
+}
+
+const numberWordValues = {
+  یک: 1,
+  دو: 2,
+  سه: 3,
+  چهار: 4,
+  پنج: 5,
+  شش: 6,
+  هفت: 7,
+  هشت: 8,
+  نه: 9,
+  ده: 10,
+  یازده: 11,
+  دوازده: 12,
+  سیزده: 13,
+  چهارده: 14,
+  پانزده: 15,
+  شانزده: 16,
+  هفده: 17,
+  هجده: 18,
+  نوزده: 19,
+  بیست: 20,
+  سی: 30,
+  چهل: 40,
+  پنجاه: 50,
+  شصت: 60,
+  هفتاد: 70,
+  هشتاد: 80,
+  نود: 90,
+  صد: 100,
+  یکصد: 100,
+  دویست: 200,
+  سیصد: 300,
+  چهارصد: 400,
+  پانصد: 500,
+  ششصد: 600,
+  هفتصد: 700,
+  هشتصد: 800,
+  نهصد: 900,
+};
+const numberWordScales = {
+  هزار: 1, میلیون: 2, میلیارد: 3, تریلیون: 4, کوادریلیون: 5,
+};
+const fractionWordPlaces = ['دهم', 'صدم', 'هزارم', 'ده‌هزارم', 'صد‌هزارم', 'میلیونیم',
+  'ده‌میلیونیم', 'صد‌میلیونیم', 'میلیاردم', 'ده‌میلیاردم', 'صد‌میلیاردم', 'تریلیونیم'];
+
+function readWordGroup(words) {
+  if (!words.length || words.length > 5 || words.length % 2 === 0) return null;
+  let result = 0;
+  let ceiling = 1000;
+  for (let index = 0; index < words.length; index += 1) {
+    if (index % 2) {
+      if (words[index] !== 'و') return null;
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(numberWordValues, words[index])) return null;
+      const value = numberWordValues[words[index]];
+      if (value >= ceiling) return null;
+      result += value;
+      if (value >= 100) ceiling = 100;
+      else if (value >= 20) ceiling = 10;
+      else ceiling = 0;
+    }
+  }
+  return result;
+}
+
+function readIntegerWords(words) {
+  if (words.length === 1 && words[0] === 'صفر') return '0';
+  if (!words.length) return null;
+  const groups = [0, 0, 0, 0, 0, 0];
+  let previousScale = 6;
+  let start = 0;
+  for (let index = 0; index < words.length; index += 1) {
+    if (Object.prototype.hasOwnProperty.call(numberWordScales, words[index])) {
+      const scale = numberWordScales[words[index]];
+      if (scale >= previousScale) return null;
+      const value = index === start ? 1 : readWordGroup(words.slice(start, index));
+      if (value === null) return null;
+      groups[scale] = value;
+      previousScale = scale;
+      start = index + 1;
+      if (words[start] === 'و') start += 1;
+      if (start > words.length) return null;
+    }
+  }
+  if (start < words.length) {
+    const value = readWordGroup(words.slice(start));
+    if (value === null) return null;
+    groups[0] = value;
+  } else if (words[words.length - 1] === 'و') return null;
+  return groups.reverse().map(value => (`00${value}`).slice(-3)).join('').replace(/^0+/, '');
+}
+
+function fractionDigits(words) {
+  const places = fractionWordPlaces.indexOf(words[words.length - 1]) + 1;
+  if (!places) return null;
+  const numerator = readIntegerWords(words.slice(0, -1));
+  if (numerator === null || numerator.length > places) return null;
+  return (new Array(places + 1).join('0') + numerator).slice(-places).replace(/0+$/, '');
+}
+
+function decimalFromWords(words) {
+  const point = words.indexOf('ممیز');
+  if (point !== -1) {
+    if (words.lastIndexOf('ممیز') !== point) return null;
+    const integer = readIntegerWords(words.slice(0, point));
+    if (integer === null) return null;
+    const tail = words.slice(point + 1);
+    let fraction = fractionDigits(tail);
+    if (fraction === null) {
+      fraction = '';
+      for (let index = 0; index < tail.length; index += 1) {
+        const word = tail[index];
+        if (word === 'صفر') fraction += '0';
+        else if (Object.prototype.hasOwnProperty.call(numberWordValues, word)
+          && numberWordValues[word] < 10) fraction += String(numberWordValues[word]);
+        else return null;
+      }
+      if (!fraction) return null;
+      fraction = fraction.replace(/0+$/, '');
+      if (fraction.length > 12) throw new RangeError('NUMBER_OUT_OF_RANGE');
+    }
+    return integer + (fraction ? `.${fraction}` : '');
+  }
+  if (fractionWordPlaces.indexOf(words[words.length - 1]) === -1) {
+    return readIntegerWords(words);
+  }
+  const candidates = [];
+  const fraction = fractionDigits(words);
+  if (fraction !== null) candidates.push(fraction ? `0.${fraction}` : '0');
+  for (let index = 0; index < words.length; index += 1) {
+    if (words[index] === 'و') {
+      const integer = readIntegerWords(words.slice(0, index));
+      const decimal = fractionDigits(words.slice(index + 1));
+      if (integer !== null && decimal !== null) {
+        const candidate = integer + (decimal ? `.${decimal}` : '');
+        if (candidates.indexOf(candidate) === -1) candidates.push(candidate);
+      }
+    }
+  }
+  if (candidates.length > 1) throw new TypeError('AMBIGUOUS_NUMBER_WORDS');
+  return candidates.length ? candidates[0] : null;
+}
+
+function wordsToDigits(input, options = {}) {
+  if (typeof input !== 'string') throw new TypeError('INPUT_MUST_BE_STRING');
+  const normalized = persianLetters(input).replace(/[\u064b-\u065f]/g, '')
+    .replace(/[ \t\r\n\f\v\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+/g, ' ')
+    .replace(/^ | $/g, '');
+  const words = normalized.split(' ');
+  if (!normalized || words.length > 80) throw new TypeError('INVALID_NUMBER_WORDS');
+  const negative = words[0] === 'منفی';
+  if (negative) words.shift();
+  let result;
+  if (options && options.ordinal === true) {
+    const last = words[words.length - 1];
+    let cardinal;
+    if (last === 'اول') cardinal = 'یک';
+    else if (last === 'سوم') cardinal = 'سه';
+    else if (last === 'سی\u200cام' || last === 'سیام') cardinal = 'سی';
+    else if (last && last.slice(-1) === 'م') cardinal = last.slice(0, -1);
+    if (!cardinal) throw new TypeError('INVALID_NUMBER_WORDS');
+    words[words.length - 1] = cardinal;
+    result = readIntegerWords(words);
+  } else result = decimalFromWords(words);
+  if (result === null || result === undefined) throw new TypeError('INVALID_NUMBER_WORDS');
+  return (negative && result !== '0' ? '-' : '') + result;
+}
+
 function switchKeyboard(input, options = {}) {
   if (typeof input !== 'string') throw new TypeError('INPUT_MUST_BE_STRING');
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -228,7 +434,8 @@ function snapshotDefaults(options, keys) {
 
 function withDefaults(convert, defaults, keys) {
   return (input, options = {}) => {
-    const strictOptions = convert === formatNumber || convert === switchKeyboard;
+    const strictOptions = convert === formatNumber || convert === unformatNumber
+      || convert === switchKeyboard;
     if (!options || typeof options !== 'object' || (strictOptions && Array.isArray(options))) {
       if (strictOptions || (convert === toPersian && options === null)) {
         return convert(input, options);
@@ -252,7 +459,15 @@ function createPersian(config = {}) {
     throw new TypeError('OPTIONS_MUST_BE_OBJECT');
   }
   const methods = {
-    toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard,
+    toPersian,
+    toEnglish,
+    formatNumber,
+    numberToWords,
+    switchKeyboard,
+    persianDigits,
+    persianLetters,
+    unformatNumber,
+    wordsToDigits,
   };
   const optionKeys = {
     toPersian: ['arabic', 'english', 'preserveHalfSpace', 'preserveDiacritics'],
@@ -260,6 +475,10 @@ function createPersian(config = {}) {
     formatNumber: ['separator'],
     numberToWords: ['ordinal'],
     switchKeyboard: ['direction'],
+    persianDigits: [],
+    persianLetters: [],
+    unformatNumber: ['separator'],
+    wordsToDigits: ['ordinal'],
   };
   Object.keys(config).forEach((key) => {
     if (!Object.prototype.hasOwnProperty.call(methods, key)) throw new TypeError('UNKNOWN_OPTION');
@@ -280,4 +499,8 @@ module.exports = {
   numberToWords,
   switchKeyboard,
   createPersian,
+  persianDigits,
+  persianLetters,
+  unformatNumber,
+  wordsToDigits,
 };

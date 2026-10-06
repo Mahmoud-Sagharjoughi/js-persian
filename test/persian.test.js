@@ -133,7 +133,7 @@ invalidInputs.forEach(function (input) {
   });
 });
 
-assert.deepEqual(Object.keys(require('../')).sort(), ['createPersian', 'formatNumber', 'numberToWords', 'switchKeyboard', 'toEnglish', 'toPersian']);
+assert.deepEqual(Object.keys(require('../')).sort(), ['createPersian', 'formatNumber', 'numberToWords', 'persianDigits', 'persianLetters', 'switchKeyboard', 'toEnglish', 'toPersian', 'unformatNumber', 'wordsToDigits']);
 assert.throws(function () { toPersian('123', null); }, TypeError);
 assert.strictEqual(toPersian(-Infinity), '-Infinity');
 assert.strictEqual(toEnglish(-Infinity), '-Infinity');
@@ -419,7 +419,7 @@ assert.deepEqual([1, 2, 3].map(numberToWords), ['یک', 'دو', 'سه']);
 
 var createPersian = persian.createPersian;
 var plain = createPersian();
-assert.deepEqual(Object.keys(plain).sort(), ['formatNumber', 'numberToWords', 'switchKeyboard', 'toEnglish', 'toPersian']);
+assert.deepEqual(Object.keys(plain).sort(), ['formatNumber', 'numberToWords', 'persianDigits', 'persianLetters', 'switchKeyboard', 'toEnglish', 'toPersian', 'unformatNumber', 'wordsToDigits']);
 persianCases.forEach(function (testCase) { assert.strictEqual(plain.toPersian(testCase[0]), testCase[1]); });
 wordCases.forEach(function (testCase) { assert.strictEqual(plain.numberToWords(testCase[0]), testCase[1]); });
 var config = {
@@ -560,6 +560,7 @@ for (var generatedCase = 0; generatedCase < 5000; generatedCase += 1) {
   var canonical = sign + paddedInteger + (fractionText ? '.' + fractionText : '');
   var separator = ['٬', ',', ' | ', '$&'][generatedRandom(4)];
   var formatted = formatNumber(input, { separator: separator });
+  assert.strictEqual(persian.unformatNumber(formatted, { separator: separator }), input);
   assert.strictEqual(formatted.slice(0, sign.length), sign);
   if (suffix) assert.strictEqual(formatted.slice(-suffix.length), suffix);
   var groups = formatted.slice(sign.length, formatted.length - suffix.length).split(separator);
@@ -572,6 +573,15 @@ for (var generatedCase = 0; generatedCase < 5000; generatedCase += 1) {
     expectError(function () { numberToWords(canonical); }, RangeError, 'NUMBER_OUT_OF_RANGE');
     expectError(function () { generated.numberToWords(input); }, RangeError, 'NUMBER_OUT_OF_RANGE');
   } else {
+    var normalizedSign = (sign === '-' || sign === '−') && (significantInteger !== '0' || significantFraction) ? '-' : '';
+    var expectedDigits = normalizedSign + significantInteger + (significantFraction ? '.' + significantFraction : '');
+    assert.strictEqual(persian.wordsToDigits(numberToWords(paddedInteger)), significantInteger);
+    assert.strictEqual(persian.wordsToDigits(numberToWords(paddedInteger, { ordinal: true }), { ordinal: true }), significantInteger);
+    if (significantFraction) {
+      var preciseWords = normalizedSign ? 'منفی ' : '';
+      preciseWords += numberToWords(paddedInteger) + ' ممیز ' + numberToWords(significantFraction) + ' ' + decimalUnits[significantFraction.length - 1];
+      assert.strictEqual(persian.wordsToDigits(preciseWords), expectedDigits);
+    }
     var words = numberToWords(input);
     assert.strictEqual(words, numberToWords(canonical));
     assert.strictEqual(generated.numberToWords(input, { ordinal: false }), words);
@@ -610,6 +620,121 @@ for (var generatedCase = 0; generatedCase < 5000; generatedCase += 1) {
   });
 });
 console.log('5,000 generated numeric cases passed (seed 1749).');
+
+assert.deepEqual(Object.getOwnPropertyNames(String.prototype), stringProperties);
+assert.strictEqual(String.prototype.replaceAll, originalReplaceAll);
+var convertDigits = persian.persianDigits;
+var convertLetters = persian.persianLetters;
+var unformatNumber = persian.unformatNumber;
+var wordsToDigits = persian.wordsToDigits;
+assert.strictEqual(convertDigits('عَلِي می\u200c\u200dرود 🌍 12٣۴'), 'عَلِي می\u200c\u200dرود 🌍 ۱۲۳۴');
+assert.strictEqual(convertLetters('عَلِي می\u200c\u200dرود 🌍 12٣۴'), 'عَلِی می\u200c\u200dرود 🌍 12٣۴');
+assert.strictEqual(convertLetters('يىك'), 'ییک');
+assert.strictEqual(convertDigits(-123.45), '-۱۲۳.۴۵');
+assert.strictEqual(convertLetters(-123.45), '-123.45');
+assert.strictEqual(convertDigits(''), '');
+assert.strictEqual(convertLetters(''), '');
+assert.strictEqual(convertDigits(NaN), 'NaN');
+assert.strictEqual(convertLetters(Infinity), 'Infinity');
+assert.strictEqual(convertDigits.length, 1);
+assert.strictEqual(convertLetters.length, 1);
+assert.strictEqual(wordsToDigits.length, 1);
+assert.strictEqual(unformatNumber.length, 1);
+var digitCharacters = '';
+var letterCharacters = '';
+for (var newPoint = 0; newPoint <= 65535; newPoint += 1) {
+  var newCharacter = String.fromCharCode(newPoint);
+  var digitIndex = englishDigits.indexOf(newCharacter);
+  if (digitIndex === -1) digitIndex = arabicDigits.indexOf(newCharacter);
+  digitCharacters += digitIndex === -1 ? newCharacter : persianDigits.charAt(digitIndex);
+  letterCharacters += newCharacter === 'ك' ? 'ک' : (newCharacter === 'ي' || newCharacter === 'ى' ? 'ی' : newCharacter);
+}
+assert.strictEqual(convertDigits(allCharacters), digitCharacters);
+assert.strictEqual(convertLetters(allCharacters), letterCharacters);
+assert.strictEqual(convertDigits(convertDigits(allCharacters)), digitCharacters);
+assert.strictEqual(convertLetters(convertLetters(allCharacters)), letterCharacters);
+invalidInputs.forEach(function (input) {
+  [convertDigits, convertLetters].forEach(function (convert) {
+    expectError(function () { convert(input); }, TypeError, 'INPUT_MUST_BE_NUMBER_OR_STRING');
+  });
+});
+assert.strictEqual(unformatNumber('−۰۰۱٬۲۳۴٫۵۰'), '−۰۰۱۲۳۴٫۵۰');
+assert.strictEqual(unformatNumber('9٬007٬199٬254٬740٬993'), '9007199254740993');
+assert.strictEqual(unformatNumber('+1$&234$&567.00', { separator: '$&' }), '+1234567.00');
+assert.strictEqual(unformatNumber('1🌍234', { separator: '🌍' }), '1234');
+assert.strictEqual(unformatNumber('1\n234', { separator: '\n' }), '1234');
+assert.strictEqual(unformatNumber('0000'), '0000');
+['', '٬123', '123٬', '1٬23', '1234٬567', '1٬234٬56', '1٬٬234', ' 123', '123 ', '123\n', '1,234', '1٫2٬345', '1e3', '--1', '1.2.3', '1٬23٤\u0000', '1٬234\n'].forEach(function (input) {
+  expectError(function () { unformatNumber(input); }, TypeError, 'INVALID_NUMBER');
+});
+[null, false, 0, '', []].forEach(function (options) {
+  expectError(function () { unformatNumber('1', options); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+});
+['', '0', '+', '-', '−', '.', '٫', '۱۲', '٣', null, 0].forEach(function (separator) {
+  expectError(function () { unformatNumber('1', { separator: separator }); }, TypeError, 'INVALID_SEPARATOR');
+});
+[undefined, null, {}, [], true, 1].forEach(function (input) {
+  [unformatNumber, wordsToDigits].forEach(function (convert) {
+    expectError(function () { convert(input); }, TypeError, 'INPUT_MUST_BE_STRING');
+  });
+});
+var wordCases = [
+  ['صفر', '0'], ['منفی صفر', '0'], ['یک', '1'], ['یکصد و بیست و سه', '123'],
+  ['سه هزار دویست و دوازده', '3212'], ['هزار', '1000'], ['میلیون و هزار و یک', '1001001'],
+  ['منفی یک میلیون', '-1000000'], ['  دويست\n و\t سیزده  ', '213'],
+  ['نُه', '9'], ['صد کوادریلیون و یک', '100000000000000001'],
+  ['یک دهم', '0.1'], ['یک هزارم', '0.001'], ['منفی دوازده و پنج دهم', '-12.5'],
+  ['دو و پنج صدم', '2.05'], ['صفر دهم', '0'], ['یک تریلیونیم', '0.000000000001'],
+  ['صد ممیز پنج هزارم', '100.005'], ['صفر ممیز صفر صفر یک', '0.001'],
+  ['منفی دوازده ممیز پنج صفر', '-12.5'], ['صفر ممیز صفر صفر', '0'],
+  ['دو ممیز بیست و پنج صدم', '2.25'],
+];
+wordCases.forEach(function (testCase) { assert.strictEqual(wordsToDigits(testCase[0]), testCase[1], testCase[0]); });
+[['اول', '1'], ['یکم', '1'], ['سوم', '3'], ['سی\u200cام', '30'], ['بیست و سوم', '23'], ['یک هزارم', '1000'], ['منفی صفرم', '0']].forEach(function (testCase) {
+  assert.strictEqual(wordsToDigits(testCase[0], { ordinal: true }), testCase[1]);
+});
+['صد و پنج هزارم', 'یک هزار و یک میلیونیم'].forEach(function (input) {
+  expectError(function () { wordsToDigits(input); }, TypeError, 'AMBIGUOUS_NUMBER_WORDS');
+});
+['', ' ', 'یک و', 'و یک', 'یک و و دو', 'یک دو', 'ده و دو', 'بیست و ده', 'صد و دویست', 'صفر هزار', 'صفر و یک', 'هزار میلیون', 'دو میلیون و سه میلیون', 'منفی منفی یک', 'سه تومان', '123', 'یک 🌍', 'constructor', '__proto__', 'یک\u0000', 'یک\u200d', '\u180eیک', 'یک\u180e', 'یک ممیز', 'ممیز یک', 'یک ممیز یک ممیز دو', 'صد صدم', 'سوم', 'یگصد'].forEach(function (input) {
+  expectError(function () { wordsToDigits(input); }, TypeError, 'INVALID_NUMBER_WORDS');
+});
+['سه', 'یک دهم', 'منفی', 'یک ممیز یک دهم'].forEach(function (input) {
+  expectError(function () { wordsToDigits(input, { ordinal: true }); }, TypeError, 'INVALID_NUMBER_WORDS');
+});
+expectError(function () { wordsToDigits('صفر ممیز ' + new Array(14).join('یک ')); }, RangeError, 'NUMBER_OUT_OF_RANGE');
+expectError(function () { wordsToDigits(new Array(82).join('یک ')); }, TypeError, 'INVALID_NUMBER_WORDS');
+for (var groupNumber = 0; groupNumber <= 999; groupNumber += 1) {
+  assert.strictEqual(wordsToDigits(numberToWords(groupNumber)), String(groupNumber));
+  assert.strictEqual(wordsToDigits(numberToWords(groupNumber, { ordinal: true }), { ordinal: true }), String(groupNumber));
+}
+['9007199254740993', '999999999999999999', '-999999999999999999', '100000000000000001', '100000000000001'].forEach(function (integer) {
+  assert.strictEqual(wordsToDigits(numberToWords(integer)), integer);
+  assert.strictEqual(wordsToDigits(numberToWords(integer, { ordinal: true }), { ordinal: true }), integer);
+});
+var reverseConfig = { unformatNumber: { separator: '$&' }, wordsToDigits: { ordinal: true } };
+var reverse = createPersian(reverseConfig);
+reverseConfig.unformatNumber.separator = ',';
+reverseConfig.wordsToDigits.ordinal = false;
+assert.strictEqual(reverse.unformatNumber('1$&234'), '1234');
+assert.strictEqual(reverse.unformatNumber('1,234', { separator: ',' }), '1234');
+assert.strictEqual(reverse.wordsToDigits('یک هزارم'), '1000');
+assert.strictEqual(reverse.wordsToDigits('یک هزارم', { ordinal: false }), '0.001');
+assert.strictEqual(reverse.wordsToDigits('یک هزارم', { ordinal: undefined }), '1000');
+assert.strictEqual(reverse.persianDigits('علي 12٣'), 'علي ۱۲۳');
+assert.strictEqual(reverse.persianLetters('علي 12٣'), 'علی 12٣');
+assert.deepEqual(['یکم', 'سوم'].map(reverse.wordsToDigits), ['1', '3']);
+assert.deepEqual(['یک', 'سه'].map(wordsToDigits), ['1', '3']);
+assert.deepEqual(['12٣'].map(reverse.persianDigits), ['۱۲۳']);
+var detachedWords = reverse.wordsToDigits;
+assert.strictEqual(detachedWords('سوم'), '3');
+expectError(function () { createPersian({ wordsToDigits: { ordinal: 'yes' } }); }, TypeError, 'OPTION_MUST_BE_BOOLEAN');
+expectError(function () { createPersian({ unformatNumber: { separator: '' } }); }, TypeError, 'INVALID_SEPARATOR');
+expectError(function () { reverse.unformatNumber('1', null); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+expectError(function () { createPersian({ wordsToDigits: { typo: true } }); }, TypeError, 'UNKNOWN_OPTION');
+assert.strictEqual(reverse.wordsToDigits('سوم', Object.create({ ordinal: false })), '3');
+assert.strictEqual(createPersian({ wordsToDigits: Object.create({ ordinal: true }) }).wordsToDigits('یک'), '1');
+console.log('Independent text converters and strict reverse numeric conversions passed.');
 
 assert.deepEqual(Object.getOwnPropertyNames(String.prototype), stringProperties);
 assert.strictEqual(String.prototype.replaceAll, originalReplaceAll);

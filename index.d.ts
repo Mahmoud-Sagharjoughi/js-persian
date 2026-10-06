@@ -17,6 +17,10 @@ export interface NumberToWordsOptions {
   ordinal?: boolean;
 }
 
+export interface WordsToDigitsOptions {
+  ordinal?: boolean;
+}
+
 export interface SwitchKeyboardOptions {
   direction?: 'toEnglish' | 'toPersian';
 }
@@ -28,12 +32,20 @@ export function numberToWords(input: string | number, options?: NumberToWordsOpt
 export function numberToWords(input: string | number): string;
 export function switchKeyboard(input: string, options?: SwitchKeyboardOptions): string;
 
+export function persianDigits(input: string | number): string;
+export function persianLetters(input: string | number): string;
+export function unformatNumber(input: string, options?: FormatNumberOptions): string;
+export function wordsToDigits(input: string, options?: WordsToDigitsOptions): string;
+export function wordsToDigits(input: string): string;
+
 export interface PersianConfig {
   toPersian?: ToPersianOptions;
   toEnglish?: ToEnglishOptions;
   formatNumber?: FormatNumberOptions;
   numberToWords?: NumberToWordsOptions;
   switchKeyboard?: SwitchKeyboardOptions;
+  unformatNumber?: FormatNumberOptions;
+  wordsToDigits?: WordsToDigitsOptions;
 }
 
 export interface PersianInstance {
@@ -42,6 +54,10 @@ export interface PersianInstance {
   formatNumber: typeof formatNumber;
   numberToWords: typeof numberToWords;
   switchKeyboard: typeof switchKeyboard;
+  persianDigits: typeof persianDigits;
+  persianLetters: typeof persianLetters;
+  unformatNumber: typeof unformatNumber;
+  wordsToDigits: typeof wordsToDigits;
 }
 
 export function createPersian(config?: PersianConfig): PersianInstance;

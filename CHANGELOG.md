@@ -10,6 +10,10 @@
 - `numberToWords` for Persian integer and decimal words, with optional integer ordinals.
 - `createPersian` for independent instances with reusable defaults and per-call overrides.
 - `switchKeyboard` for Persian Standard and English QWERTY letter positions.
+- `persianDigits` and `persianLetters` for independent digit and letter conversions.
+- `unformatNumber` for removing valid grouping without losing precision or digit style.
+- `wordsToDigits` for exact integer, decimal and ordinal parsing, with explicit ambiguity errors.
+- Reusable separator and ordinal defaults for the reverse number utilities.
 - TypeScript definitions for all exports and options.
 - Conversion benchmarks for short and long inputs.
 - CI coverage for packaged installation, CommonJS, native ESM, TypeScript and Vite browser consumers.
