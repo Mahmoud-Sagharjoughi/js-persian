@@ -145,3 +145,40 @@ jobs:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - run: node test/types.js "${{ runner.temp }}/compiler/node_modules/typescript/bin/tsc" "${{ runner.temp }}/consumer" ${{ matrix.mode }}
+
+  browser:
+    name: Vite / ${{ matrix.browser }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.16.0'
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-package
+      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer" --prepare-install
+      - name: Install local npm archive
+        working-directory: ${{ runner.temp }}/consumer
+        env:
+          npm_config_cache: ${{ runner.temp }}/npm-install-cache
+          npm_config_userconfig: ${{ runner.temp }}/consumer/npmrc
+          npm_config_registry: http://127.0.0.1:9
+          npm_config_audit: 'false'
+          npm_config_fund: 'false'
+          npm_config_update_notifier: 'false'
+        run: npm install ./persian.tgz --save
+      - run: node "${{ runner.temp }}/consumer/installed.js"
+      - run: npm ci --prefix test/browser --ignore-scripts --no-audit --no-fund
+      - run: node test/browser/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
+      - run: npm run test:browser -- "${{ runner.temp }}/consumer" ${{ matrix.browser }}

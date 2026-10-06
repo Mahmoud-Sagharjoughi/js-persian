@@ -43,7 +43,34 @@ enabled and an unreachable registry, then runs the regression tests. CI also
 checks that installation adds no runtime dependencies. Each runtime also runs
 the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
-and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2.
+and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2. Separate browser jobs
+test all five named imports with Vite in development and production on Chromium,
+Firefox and WebKit, using the same npm archive.
+
+## Browser tests
+
+Browser test tools are isolated in `test/browser` and require Node.js 24.11 or
+later. To test a local archive without publishing it:
+
+```bash
+npm ci --prefix test/browser --ignore-scripts
+node test/browser/node_modules/playwright/cli.js install chromium firefox webkit
+npm pack --pack-destination /path/to/empty-archive-directory
+node test/package.js /path/to/empty-archive-directory /path/to/fresh-consumer --prepare-install
+cd /path/to/fresh-consumer
+npm install ./persian.tgz --save
+cd /path/to/js-persian
+npm run test:browser -- /path/to/fresh-consumer chromium
+npm run test:browser -- /path/to/fresh-consumer firefox
+npm run test:browser -- /path/to/fresh-consumer webkit
+```
+
+On Linux, Playwright may require system browser dependencies; use its
+`install --with-deps` option when needed. These tests check conversion defaults
+and options, Unicode, numeric precision, keyboard mapping, rejected inputs and
+unchanged `String.prototype`. They cover the installed Playwright browser engines,
+not historical browser versions. Test tools and fixtures are excluded from the
+published package.
 
 ## Benchmarks
 

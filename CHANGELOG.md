@@ -11,7 +11,7 @@
 - `switchKeyboard` for Persian Standard and English QWERTY letter positions.
 - TypeScript definitions for all exports and options.
 - Conversion benchmarks for short and long inputs.
-- CI coverage for packaged installation, CommonJS, native ESM and TypeScript consumers.
+- CI coverage for packaged installation, CommonJS, native ESM, TypeScript and Vite browser consumers.
 
 ### Changed
 
