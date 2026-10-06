@@ -272,6 +272,7 @@ var wordValues = {
   'دویست': 200, 'سیصد': 300, 'چهارصد': 400, 'پانصد': 500, 'ششصد': 600,
   'هفتصد': 700, 'هشتصد': 800, 'نهصد': 900, 'هزار': 1000,
   'میلیون': 1000000, 'میلیارد': 1000000000, 'تریلیون': 1000000000000,
+  'کوادریلیون': 1000000000000000,
 };
 function readIntegerWords(words) {
   var total = 0;
@@ -523,6 +524,92 @@ assert.strictEqual(reads, 2);
 assert.strictEqual(fromGetter.toEnglish('٣'), '3');
 assert.strictEqual(createPersian({ toEnglish: undefined }).toEnglish('٣'), '٣');
 assert.strictEqual(createPersian({ toEnglish: { arabic: undefined } }).toEnglish('٣'), '٣');
+
+
+var generatedSeed = 1749;
+function generatedRandom(limit) {
+  generatedSeed = (generatedSeed * 16807) % 2147483647;
+  return generatedSeed % limit;
+}
+function mixedDigits(text) {
+  return text.replace(/[0-9]/g, function (digit) {
+    return [englishDigits, arabicDigits, persianDigits][generatedRandom(3)].charAt(Number(digit));
+  });
+}
+var generated = createPersian({ formatNumber: { separator: '$&' }, numberToWords: { ordinal: true } });
+var decimalUnits = ['دهم', 'صدم', 'هزارم', 'ده‌هزارم', 'صد‌هزارم', 'میلیونیم',
+  'ده‌میلیونیم', 'صد‌میلیونیم', 'میلیاردم', 'ده‌میلیاردم', 'صد‌میلیاردم', 'تریلیونیم'];
+var invalidTokens = [',', '٬', '_', ' ', '\n', '\r', '\u2028', '\u2029', '\u0000', '\ufeff', 'e', '🌍', '\u200c'];
+for (var generatedCase = 0; generatedCase < 5000; generatedCase += 1) {
+  var significantInteger = String(1 + generatedRandom(9));
+  var integerLength = 1 + generatedCase % 24;
+  for (var position = 1; position < integerLength; position += 1) significantInteger += generatedRandom(10);
+  if (generatedCase % 31 === 0) significantInteger = '0';
+  var paddedInteger = new Array(1 + generatedRandom(8)).join('0') + significantInteger;
+  var significantFraction = '';
+  var fractionLength = Math.floor(generatedCase / 24) % 16;
+  for (position = 0; position < fractionLength; position += 1) {
+    significantFraction += position === fractionLength - 1 ? 1 + generatedRandom(9) : generatedRandom(10);
+  }
+  var fractionText = significantFraction + new Array(1 + generatedRandom(5)).join('0');
+  var sign = ['', '+', '-', '−'][Math.floor(generatedCase / 384) % 4];
+  var decimalMark = generatedCase % 2 ? '.' : '٫';
+  var integerText = mixedDigits(paddedInteger);
+  var suffix = fractionText ? decimalMark + mixedDigits(fractionText) : '';
+  var input = sign + integerText + suffix;
+  var canonical = sign + paddedInteger + (fractionText ? '.' + fractionText : '');
+  var separator = ['٬', ',', ' | ', '$&'][generatedRandom(4)];
+  var formatted = formatNumber(input, { separator: separator });
+  assert.strictEqual(formatted.slice(0, sign.length), sign);
+  if (suffix) assert.strictEqual(formatted.slice(-suffix.length), suffix);
+  var groups = formatted.slice(sign.length, formatted.length - suffix.length).split(separator);
+  assert.strictEqual(groups.join(''), integerText, 'Generated case ' + generatedCase);
+  assert.ok(groups[0].length >= 1 && groups[0].length <= 3);
+  groups.slice(1).forEach(function (group) { assert.strictEqual(group.length, 3); });
+  assert.strictEqual(generated.formatNumber(input), formatNumber(input, { separator: '$&' }));
+  if (significantInteger.length > 18 || significantFraction.length > 12) {
+    expectError(function () { numberToWords(input); }, RangeError, 'NUMBER_OUT_OF_RANGE');
+    expectError(function () { numberToWords(canonical); }, RangeError, 'NUMBER_OUT_OF_RANGE');
+    expectError(function () { generated.numberToWords(input); }, RangeError, 'NUMBER_OUT_OF_RANGE');
+  } else {
+    var words = numberToWords(input);
+    assert.strictEqual(words, numberToWords(canonical));
+    assert.strictEqual(generated.numberToWords(input, { ordinal: false }), words);
+    if (significantFraction) {
+      expectError(function () { numberToWords(input, { ordinal: true }); }, RangeError, 'ORDINAL_REQUIRES_INTEGER');
+      expectError(function () { generated.numberToWords(input); }, RangeError, 'ORDINAL_REQUIRES_INTEGER');
+      if (significantInteger === '0') {
+        var unit = decimalUnits[significantFraction.length - 1];
+        var unsignedWords = words.replace(/^منفی /, '');
+        assert.strictEqual(unsignedWords.slice(-unit.length - 1), ' ' + unit);
+        assert.strictEqual(readIntegerWords(unsignedWords.slice(0, -unit.length - 1)), Number(significantFraction));
+      }
+    } else {
+      assert.strictEqual(numberToWords(input, { ordinal: true }), numberToWords(canonical, { ordinal: true }));
+      assert.strictEqual(generated.numberToWords(input), numberToWords(input, { ordinal: true }));
+    }
+    if (significantInteger.length <= 15) {
+      assert.strictEqual(readIntegerWords(numberToWords(paddedInteger)), Number(significantInteger));
+    }
+  }
+  var insertion = generatedRandom(input.length + 1);
+  var malformed = input.slice(0, insertion) + invalidTokens[generatedCase % invalidTokens.length] + input.slice(insertion);
+  expectError(function () { formatNumber(malformed); }, TypeError, 'INVALID_NUMBER');
+  expectError(function () { numberToWords(malformed); }, TypeError, 'INVALID_NUMBER');
+}
+[9007199254740991, 9007199254740990, 9007199254740992, 9007199254740994].forEach(function (boundary) {
+  [-1, 1].forEach(function (sign) {
+    var input = sign * boundary;
+    if (boundary > 9007199254740991) {
+      expectError(function () { formatNumber(input); }, RangeError, 'NUMBER_MUST_BE_SAFE');
+      expectError(function () { numberToWords(input); }, RangeError, 'NUMBER_MUST_BE_SAFE');
+    } else {
+      assert.strictEqual(readIntegerWords(numberToWords(input).replace(/^منفی /, '')), boundary);
+      assert.strictEqual(formatNumber(input).replace(/٬/g, ''), String(input));
+    }
+  });
+});
+console.log('5,000 generated numeric cases passed (seed 1749).');
 
 assert.deepEqual(Object.getOwnPropertyNames(String.prototype), stringProperties);
 assert.strictEqual(String.prototype.replaceAll, originalReplaceAll);
