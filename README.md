@@ -34,7 +34,10 @@ package retains the runtime compatibility listed above.
 Run `npm run lint` to check the source style and `npm test` to build the package
 and run the regression tests. The tests cover conversion options, half-spaces, numeric boundaries, keyboard layouts, invalid
 inputs, unchanged `String.prototype`, and all 65,536 UTF-16 code units across
-every combination of conversion options.
+every combination of conversion options. A fixed seed generates 5,000 additional
+numeric cases covering mixed digit scripts, signs, leading and trailing zeros,
+fractional precision, integer size limits, malformed Unicode inputs and ordinal
+options. Integer words are also checked with an independent arithmetic reader.
 
 CI builds one npm archive and tests that archive on the Node.js versions above
 on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. Each runtime installs
@@ -46,6 +49,31 @@ ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and va
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2. Separate browser jobs
 test all six named imports with Vite in development and production on Chromium,
 Firefox and WebKit, using the same npm archive.
+
+Yarn consumer jobs install that archive with Yarn 1.3.2 on Node.js 8.9.1,
+Yarn 1.22.22 on Node.js 24.16.0, and Yarn 4.18.1 on Node.js 24.16.0 using both
+`node-modules` and Plug'n'Play. Installs use isolated caches, disabled registry
+access and enabled lifecycle scripts. A second install checks the frozen or
+immutable lockfile. Each consumer verifies package contents and zero runtime
+dependencies, then runs the regression tests; Node.js 12 and later also check
+native ESM imports. Plug'n'Play consumers run through `yarn node` to load Yarn's
+module resolver. These jobs test package consumption; building this repository
+still requires the development Node.js versions listed above.
+
+## Yarn consumer tests
+
+To test a local archive with an already installed Yarn CLI, prepare a fresh
+consumer with `test/package.js`, then run:
+
+```bash
+node test/package.js /path/to/empty-archive-directory /path/to/fresh-consumer --prepare-install
+node test/yarn.js /path/to/yarn/bin/yarn.js /path/to/fresh-consumer classic
+```
+
+Use `node-modules` or `pnp` instead of `classic` with Yarn 4, passing the path to
+`@yarnpkg/cli-dist/bin/yarn.js`. Each run requires a fresh consumer directory.
+The runner keeps caches inside that directory and tests the local archive without
+publishing it. Prepare the archive with `npm pack --pack-destination` as shown below.
 
 ## Browser tests
 

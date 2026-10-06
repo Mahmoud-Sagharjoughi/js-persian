@@ -44,6 +44,8 @@ if (process.argv[4] === '--check-syntax') {
   parse(fs.readFileSync(path.join(target, metadata.main), 'utf8'), { ecmaVersion: 5 });
   parse(benchmark, { ecmaVersion: 5 });
   parse(fs.readFileSync(path.join(__dirname, 'installed.js'), 'utf8'), { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(__dirname, 'persian.test.js'), 'utf8'), { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(__dirname, 'yarn.js'), 'utf8'), { ecmaVersion: 5 });
   console.log('Package and benchmark ES5 syntax verified.');
 }
 fs.writeFileSync(path.join(consumer, 'benchmark.js'), benchmark.replace(/require\('\.\.\/'\)/g, "require('persian')"));

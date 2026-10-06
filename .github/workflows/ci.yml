@@ -182,3 +182,36 @@ jobs:
       - run: npm ci --prefix test/browser --ignore-scripts --no-audit --no-fund
       - run: node test/browser/node_modules/playwright/cli.js install --with-deps ${{ matrix.browser }}
       - run: npm run test:browser -- "${{ runner.temp }}/consumer" ${{ matrix.browser }}
+
+  yarn:
+    name: Yarn ${{ matrix.yarn }} / ${{ matrix.mode }} / Node ${{ matrix.node }}
+    needs: package
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { yarn: '1.3.2', package: yarn, node: '8.9.1', mode: classic }
+          - { yarn: '1.22.22', package: yarn, node: '24.16.0', mode: classic }
+          - { yarn: '4.18.1', package: '@yarnpkg/cli-dist', node: '24.16.0', mode: node-modules }
+          - { yarn: '4.18.1', package: '@yarnpkg/cli-dist', node: '24.16.0', mode: pnp }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24.16.0'
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-package
+      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer" --prepare-install
+      - run: npm install --prefix "${{ runner.temp }}/yarn-cli" --ignore-scripts --no-audit --no-fund --save-exact ${{ matrix.package }}@${{ matrix.yarn }}
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - run: node test/yarn.js "${{ runner.temp }}/yarn-cli/node_modules/${{ matrix.package }}/bin/yarn.js" "${{ runner.temp }}/consumer" ${{ matrix.mode }}

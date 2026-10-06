@@ -13,6 +13,8 @@
 - TypeScript definitions for all exports and options.
 - Conversion benchmarks for short and long inputs.
 - CI coverage for packaged installation, CommonJS, native ESM, TypeScript and Vite browser consumers.
+- Offline Yarn Classic and Yarn 4 consumer tests, including Plug'n'Play and lockfile checks.
+- Reproducible generated numeric regressions for mixed digits, precision limits and malformed inputs.
 
 ### Changed
 
