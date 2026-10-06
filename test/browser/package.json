@@ -1,0 +1,9 @@
+{
+  "name": "persian-browser-tests",
+  "version": "1.0.0",
+  "private": true,
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "vite": "8.3.3"
+  }
+}

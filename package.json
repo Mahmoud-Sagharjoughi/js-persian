@@ -15,7 +15,8 @@
     "prepublishOnly": "npm test",
     "test": "npm run build && node test/persian.test.js",
     "lint": "node_modules/.bin/eslint src/persian.js",
-    "benchmark": "node benchmark/to-persian.js"
+    "benchmark": "node benchmark/to-persian.js",
+    "test:browser": "node test/browser/run.mjs"
   },
   "author": "Mahmoud Sagharjoughi <mahmood.sa225@gmail.com>",
   "license": "Beerware",

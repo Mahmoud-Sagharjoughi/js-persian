@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Persian browser compatibility</title>
+    <link rel="icon" href="data:,">
+  </head>
+  <body>
+    <p id="result" data-status="pending">Running package checks…</p>
+    <script>
+      window.stringProperties = Object.getOwnPropertyNames(String.prototype);
+      window.originalReplaceAll = String.prototype.replaceAll;
+    </script>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
