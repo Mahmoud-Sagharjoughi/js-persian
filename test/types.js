@@ -18,10 +18,8 @@ assert.strictEqual(valid.status, 0, valid.stdout + valid.stderr);
 var invalid = compile('types-invalid.ts');
 assert.notStrictEqual(invalid.status, 0, invalid.stdout + invalid.stderr);
 var errors = invalid.stdout.match(/error TS[0-9]+:/g) || [];
-assert.strictEqual(errors.length, 5, invalid.stdout + invalid.stderr);
-assert.ok(/types-invalid\.ts\(3,/.test(invalid.stdout), invalid.stdout);
-assert.ok(/types-invalid\.ts\(4,/.test(invalid.stdout), invalid.stdout);
-assert.ok(/types-invalid\.ts\(5,/.test(invalid.stdout), invalid.stdout);
-assert.ok(/types-invalid\.ts\(6,/.test(invalid.stdout), invalid.stdout);
-assert.ok(/types-invalid\.ts\(7,/.test(invalid.stdout), invalid.stdout);
+assert.strictEqual(errors.length, 12, invalid.stdout + invalid.stderr);
+for (var line = 3; line <= 14; line += 1) {
+  assert.ok(invalid.stdout.indexOf('types-invalid.ts(' + line + ',') !== -1, invalid.stdout);
+}
 console.log('TypeScript valid inputs accepted and invalid inputs rejected.');

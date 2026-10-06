@@ -17,7 +17,7 @@ npm install persian
 yarn add persian
 ```
 
-The new conversion options and included TypeScript definitions described below
+The new conversion options, number and keyboard utilities, and TypeScript definitions below
 are part of the upcoming 1.1.0 release.
 
 ## Compatibility
@@ -28,8 +28,9 @@ The release artifact has been tested on Node.js 0.10.48, 0.12.18, 4.0.0, 4.8.6,
 12.22.12, 14.21.3, 16.20.2, 18.20.8, 20.19.5, 22.23.3, 24.16.0 and 26.10.0.
 
 Run `npm test` to build the package and run the regression tests. The tests cover
-conversion options, half-spaces, invalid inputs, unchanged `String.prototype`,
-and all 65,536 UTF-16 code units across every combination of boolean options.
+conversion options, half-spaces, numeric boundaries, keyboard layouts, invalid
+inputs, unchanged `String.prototype`, and all 65,536 UTF-16 code units across
+every combination of conversion options.
 
 CI builds one npm archive and tests that archive on the Node.js versions above
 on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. It also checks native
@@ -111,6 +112,78 @@ toEnglish('۱۲٣4', { arabic: true }); // 1234
 
 This option changes digits only; letters, diacritics and half-spaces are kept.
 Both functions accept strings or numbers and return strings.
+
+### Formatting numbers
+
+`formatNumber` groups the integer part in threes. It preserves the input's digit
+characters, sign, decimal separator, leading zeros and fractional trailing zeros.
+The default thousands separator is `٬` (U+066C):
+
+```javascript
+import { formatNumber } from 'persian';
+
+formatNumber('۱۲۳۴۵۶۷'); // ۱٬۲۳۴٬۵۶۷
+formatNumber('−۰۰۱۲۳۴٫۵۰'); // −۰۰۱٬۲۳۴٫۵۰
+formatNumber(-1234.5, { separator: ',' }); // -1,234.5
+formatNumber('9007199254740993'); // 9٬007٬199٬254٬740٬993
+```
+
+`separator` must be a nonempty string without digits, signs or decimal separators.
+It is inserted literally, including characters such as `$`.
+
+### Numbers to Persian words
+
+`numberToWords` supports signed integers and decimals written with English,
+Persian or Arabic digits, including mixed digits:
+
+```javascript
+import { numberToWords } from 'persian';
+
+numberToWords('۱۲۳'); // صد و بیست و سه
+numberToWords('-12.50'); // منفی دوازده و پنج دهم
+numberToWords('0.01'); // یک صدم
+numberToWords('100000000000000001'); // صد کوادریلیون و یک
+```
+
+The integer part supports up to 18 digits after removing leading zeros (through quadrillions);
+the fractional part supports up to 12 decimal places after removing trailing
+zeros. Leading zeros and negative zero are normalized. A whole number followed
+only by fractional zeros is read as a whole number.
+
+Both numeric utilities accept strings or numbers. Strings must contain an optional
+`+`, `-` or `−` (U+2212), one or more digits, and optionally `.` or `٫` (U+066B)
+followed by one or more digits. Spaces, existing grouping separators and string
+exponent notation are rejected with `TypeError('INVALID_NUMBER')`.
+
+Use strings for exact large integers or decimals: numeric inputs use JavaScript's
+existing string representation. Nonfinite numbers throw
+`RangeError('NUMBER_MUST_BE_FINITE')`; numbers outside ±9007199254740991 throw
+`RangeError('NUMBER_MUST_BE_SAFE')`. Numeric exponent notation is expanded to
+ordinary decimal notation. `formatNumber` has no digit limit for strings;
+`numberToWords` throws `RangeError('NUMBER_OUT_OF_RANGE')` beyond its limits.
+
+### Switching keyboard layouts
+
+`switchKeyboard` converts the letter positions of the unshifted Persian Standard
+and English QWERTY layouts. The default direction is `toEnglish`:
+
+```javascript
+import { switchKeyboard } from 'persian';
+
+switchKeyboard('لخخلمث'); // google
+switchKeyboard('google', { direction: 'toPersian' }); // لخخلمث
+```
+
+The mappings follow the letter rows in the
+[Persian Standard keyboard layout](https://learn.microsoft.com/en-us/globalization/keyboards/kbdfar.html).
+English `[`, `]`, `;`, `'` and `,` map to Persian `ج`, `چ`, `ک`, `گ` and `و`.
+Digits, uppercase English letters, shifted symbols, half-spaces, emoji and other
+unmapped characters stay unchanged. This function accepts strings only and
+converts in the requested direction without guessing the input's language.
+
+For the two utilities with options, `options` must be an object when provided.
+An invalid separator or direction throws a `TypeError`.
+These utilities are additional exports; existing conversion defaults are unchanged.
 
 ### TypeScript
 
