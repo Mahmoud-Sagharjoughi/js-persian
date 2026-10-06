@@ -133,7 +133,7 @@ invalidInputs.forEach(function (input) {
   });
 });
 
-assert.deepEqual(Object.keys(require('../')).sort(), ['formatNumber', 'numberToWords', 'switchKeyboard', 'toEnglish', 'toPersian']);
+assert.deepEqual(Object.keys(require('../')).sort(), ['createPersian', 'formatNumber', 'numberToWords', 'switchKeyboard', 'toEnglish', 'toPersian']);
 assert.throws(function () { toPersian('123', null); }, TypeError);
 assert.strictEqual(toPersian(-Infinity), '-Infinity');
 assert.strictEqual(toEnglish(-Infinity), '-Infinity');
@@ -384,6 +384,146 @@ formatNumber('1234', formatOptions);
 switchKeyboard('google', keyboardOptions);
 assert.deepEqual(formatOptions, { separator: ',' });
 assert.deepEqual(keyboardOptions, { direction: 'toPersian' });
+
+var ordinalCases = [
+  [0, 'صفرم'], [1, 'یکم'], [2, 'دوم'], [3, 'سوم'], [4, 'چهارم'],
+  [10, 'دهم'], [11, 'یازدهم'], [13, 'سیزدهم'], [20, 'بیستم'],
+  [21, 'بیست و یکم'], [22, 'بیست و دوم'], [23, 'بیست و سوم'],
+  [30, 'سی\u200cام'], [31, 'سی و یکم'], [33, 'سی و سوم'],
+  [100, 'صدم'], [103, 'صد و سوم'], [130, 'صد و سی\u200cام'],
+  [300, 'سیصدم'], [1000, 'یک هزارم'], [1003, 'یک هزار و سوم'],
+  [3000000, 'سه میلیونم'], [30000000, 'سی میلیونم'],
+  ['-3', 'منفی سوم'], ['−۲۳', 'منفی بیست و سوم'],
+  ['+۰۰۳.۰۰', 'سوم'], ['-0.000', 'صفرم'],
+  ['100000000000000003', 'صد کوادریلیون و سوم'],
+];
+ordinalCases.forEach(function (testCase) {
+  assert.strictEqual(numberToWords(testCase[0], { ordinal: true }), testCase[1]);
+  assert.strictEqual(numberToWords(toPersian(testCase[0]), { ordinal: true }), testCase[1]);
+  assert.strictEqual(numberToWords(toPersian(testCase[0]).replace(/[۰-۹]/g, function (digit) {
+    return arabicDigits.charAt(persianDigits.indexOf(digit));
+  }), { ordinal: true }), testCase[1]);
+});
+wordCases.forEach(function (testCase) {
+  [undefined, null, false, true, 0, 1, 'ordinal', [], {}, { ordinal: false },
+    { ordinal: undefined }, { ordinal: 1 }, { ordinal: 'true' }].forEach(function (options) {
+    assert.strictEqual(numberToWords(testCase[0], options), testCase[1]);
+  });
+});
+assert.strictEqual(numberToWords.length, 1);
+assert.deepEqual([1, 2, 3].map(numberToWords), ['یک', 'دو', 'سه']);
+[0.1, -0.01, 1e-7, '۱۲٫۵', '-1.001'].forEach(function (input) {
+  expectError(function () { numberToWords(input, { ordinal: true }); }, RangeError, 'ORDINAL_REQUIRES_INTEGER');
+});
+
+var createPersian = persian.createPersian;
+var plain = createPersian();
+assert.deepEqual(Object.keys(plain).sort(), ['formatNumber', 'numberToWords', 'switchKeyboard', 'toEnglish', 'toPersian']);
+persianCases.forEach(function (testCase) { assert.strictEqual(plain.toPersian(testCase[0]), testCase[1]); });
+wordCases.forEach(function (testCase) { assert.strictEqual(plain.numberToWords(testCase[0]), testCase[1]); });
+var config = {
+  toPersian: { preserveHalfSpace: true, preserveDiacritics: true },
+  toEnglish: { arabic: true },
+  formatNumber: { separator: '$&' },
+  numberToWords: { ordinal: true },
+  switchKeyboard: { direction: 'toPersian' },
+};
+var configured = createPersian(config);
+assert.strictEqual(configured.toPersian('مِي\u200cروم 12٤'), 'مِی\u200cروم ۱۲۴');
+assert.strictEqual(configured.toPersian('مِي\u200cروم 12٤', { preserveDiacritics: false }), 'می\u200cروم ۱۲۴');
+assert.strictEqual(configured.toPersian('123٤', { english: false }), '123۴');
+assert.strictEqual(configured.toPersian('مي\u200cروم', { preserveHalfSpace: undefined }), 'می\u200cروم');
+assert.strictEqual(configured.toEnglish('۱۲٣4'), '1234');
+assert.strictEqual(configured.toEnglish('۱۲٣4', { arabic: false }), '12٣4');
+assert.strictEqual(configured.toEnglish('۱۲٣4', { arabic: undefined }), '1234');
+assert.strictEqual(configured.formatNumber('1234'), '1$&234');
+assert.strictEqual(configured.formatNumber('1234', { separator: ',' }), '1,234');
+assert.strictEqual(configured.formatNumber('1234', { separator: undefined }), '1$&234');
+assert.strictEqual(configured.numberToWords(3), 'سوم');
+assert.strictEqual(configured.numberToWords(3, { ordinal: false }), 'سه');
+assert.strictEqual(configured.numberToWords(3, { ordinal: undefined }), 'سوم');
+assert.strictEqual(configured.numberToWords('0.01', { ordinal: false }), 'یک صدم');
+assert.strictEqual(configured.switchKeyboard('google'), 'لخخلمث');
+assert.strictEqual(configured.switchKeyboard('لخخلمث', { direction: 'toEnglish' }), 'google');
+assert.strictEqual(configured.switchKeyboard('google', { direction: undefined }), 'لخخلمث');
+assert.strictEqual(toEnglish('۱۲٣4'), '12٣4');
+assert.strictEqual(numberToWords(3), 'سه');
+assert.strictEqual(formatNumber('1234'), '1٬234');
+assert.strictEqual(switchKeyboard('لخخلمث'), 'google');
+config.toEnglish.arabic = false;
+config.toPersian.preserveHalfSpace = false;
+config.formatNumber.separator = ',';
+config.numberToWords.ordinal = false;
+config.switchKeyboard.direction = 'toEnglish';
+config.toEnglish = { arabic: false };
+assert.strictEqual(configured.toEnglish('۱۲٣4'), '1234');
+assert.strictEqual(configured.toPersian('مي\u200cروم'), 'می\u200cروم');
+assert.strictEqual(configured.formatNumber('1234'), '1$&234');
+assert.strictEqual(configured.numberToWords(3), 'سوم');
+assert.strictEqual(configured.switchKeyboard('google'), 'لخخلمث');
+var other = createPersian({ toEnglish: { arabic: false }, numberToWords: { ordinal: false } });
+for (var request = 0; request < 10; request += 1) {
+  assert.strictEqual(configured.toEnglish('۱۲٣4'), '1234');
+  assert.strictEqual(other.toEnglish('۱۲٣4'), '12٣4');
+  assert.strictEqual(configured.numberToWords(3), 'سوم');
+  assert.strictEqual(other.numberToWords(3), 'سه');
+}
+assert.deepEqual(['۱۲٣4', '٥۶٧'].map(configured.toEnglish), ['1234', '567']);
+assert.deepEqual([1, 2, 3].map(configured.numberToWords), ['یکم', 'دوم', 'سوم']);
+assert.deepEqual(['مي\u200cروم'].map(configured.toPersian), ['می\u200cروم']);
+var override = Object.freeze({ preserveHalfSpace: false });
+assert.strictEqual(configured.toPersian('مي\u200cروم', override), 'میروم');
+assert.deepEqual(override, { preserveHalfSpace: false });
+var frozenConfig = Object.freeze({ toEnglish: Object.freeze({ arabic: true }) });
+assert.strictEqual(createPersian(frozenConfig).toEnglish('٣'), '3');
+assert.deepEqual(frozenConfig.toEnglish, { arabic: true });
+assert.strictEqual(configured.toEnglish('٣', null), '3');
+assert.strictEqual(configured.numberToWords(3, null), 'سوم');
+expectError(function () { configured.numberToWords('0.1'); }, RangeError, 'ORDINAL_REQUIRES_INTEGER');
+assert.throws(function () { configured.toPersian('123', null); }, TypeError);
+[null, false, 0, 'x', [], function () {}].forEach(function (invalid) {
+  expectError(function () { createPersian(invalid); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+  expectError(function () { createPersian({ toEnglish: invalid }); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+  expectError(function () { configured.formatNumber('123', invalid); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+  expectError(function () { configured.switchKeyboard('google', invalid); }, TypeError, 'OPTIONS_MUST_BE_OBJECT');
+});
+[null, 0, 1, 'true', {}, []].forEach(function (invalid) {
+  expectError(function () { createPersian({ toEnglish: { arabic: invalid } }); }, TypeError, 'OPTION_MUST_BE_BOOLEAN');
+  expectError(function () { createPersian({ numberToWords: { ordinal: invalid } }); }, TypeError, 'OPTION_MUST_BE_BOOLEAN');
+});
+expectError(function () { createPersian({ formatNumber: { separator: '' } }); }, TypeError, 'INVALID_SEPARATOR');
+expectError(function () { createPersian({ switchKeyboard: { direction: 'auto' } }); }, TypeError, 'INVALID_DIRECTION');
+expectError(function () { createPersian({ arabic: true }); }, TypeError, 'UNKNOWN_OPTION');
+expectError(function () { createPersian({ toPersian: { typo: true } }); }, TypeError, 'UNKNOWN_OPTION');
+var prototypeConfig = Object.create(null);
+Object.defineProperty(prototypeConfig, '__proto__', { enumerable: true, value: { polluted: true } });
+expectError(function () { createPersian(prototypeConfig); }, TypeError, 'UNKNOWN_OPTION');
+expectError(function () { createPersian({ toEnglish: JSON.parse('{"constructor":{"polluted":true}}') }); }, TypeError, 'UNKNOWN_OPTION');
+assert.strictEqual(configured.toEnglish('٣', JSON.parse('{"__proto__":{"polluted":true}}')), '3');
+assert.strictEqual({}.polluted, undefined);
+assert.strictEqual(createPersian(Object.create({ toEnglish: { arabic: true } })).toEnglish('٣'), '٣');
+assert.strictEqual(createPersian({ toEnglish: Object.create({ arabic: true }) }).toEnglish('٣'), '٣');
+assert.strictEqual(configured.toEnglish('٣', Object.create({ arabic: false })), '3');
+var reads = 0;
+var getterConfig = {};
+Object.defineProperty(getterConfig, 'toEnglish', {
+  enumerable: true,
+  get: function () { reads += 1; return { arabic: true }; },
+});
+var fromGetter = createPersian(getterConfig);
+assert.strictEqual(reads, 1);
+assert.strictEqual(fromGetter.toEnglish('٣'), '3');
+var getterOverride = {};
+Object.defineProperty(getterOverride, 'arabic', {
+  enumerable: true,
+  get: function () { reads += 1; return false; },
+});
+assert.strictEqual(fromGetter.toEnglish('٣', getterOverride), '٣');
+assert.strictEqual(reads, 2);
+assert.strictEqual(fromGetter.toEnglish('٣'), '3');
+assert.strictEqual(createPersian({ toEnglish: undefined }).toEnglish('٣'), '٣');
+assert.strictEqual(createPersian({ toEnglish: { arabic: undefined } }).toEnglish('٣'), '٣');
+
 assert.deepEqual(Object.getOwnPropertyNames(String.prototype), stringProperties);
 assert.strictEqual(String.prototype.replaceAll, originalReplaceAll);
 console.log('All tests passed.');

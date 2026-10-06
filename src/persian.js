@@ -161,7 +161,7 @@ function integerToWords(digits) {
   return groups.reverse().join(' و ') || 'صفر';
 }
 
-function numberToWords(input) {
+function numberToWords(input, options = {}) {
   const parts = numberParts(input);
   const integer = replacePersianToEnglish(parts.integer, true).replace(/^0+/, '') || '0';
   const fraction = replacePersianToEnglish(parts.fraction.slice(1), true).replace(/0+$/, '');
@@ -169,6 +169,12 @@ function numberToWords(input) {
   const denominators = ['دهم', 'صدم', 'هزارم', 'ده‌هزارم', 'صد‌هزارم', 'میلیونیم',
     'ده‌میلیونیم', 'صد‌میلیونیم', 'میلیاردم', 'ده‌میلیاردم', 'صد‌میلیاردم', 'تریلیونیم'];
   let result = integerToWords(integer);
+  if (options && options.ordinal === true) {
+    if (fraction) throw new RangeError('ORDINAL_REQUIRES_INTEGER');
+    if (/سه$/.test(result)) result = result.replace(/سه$/, 'سوم');
+    else if (/سی$/.test(result)) result += '\u200cام';
+    else result += 'م';
+  }
   if (fraction) {
     const decimal = `${integerToWords(fraction)} ${denominators[fraction.length - 1]}`;
     result = integer === '0' ? decimal : `${result} و ${decimal}`;
@@ -195,10 +201,83 @@ function switchKeyboard(input, options = {}) {
   });
 }
 
+function snapshotDefaults(options, keys) {
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    throw new TypeError('OPTIONS_MUST_BE_OBJECT');
+  }
+  const defaults = Object.create(null);
+  Object.keys(options).forEach((key) => {
+    if (keys.indexOf(key) === -1) throw new TypeError('UNKNOWN_OPTION');
+    const value = options[key];
+    if (value === undefined) return;
+    if (key === 'separator') {
+      if (typeof value !== 'string' || !value || /[0-9۰-۹٠-٩+\-−.٫]/.test(value)) {
+        throw new TypeError('INVALID_SEPARATOR');
+      }
+    } else if (key === 'direction') {
+      if (value !== 'toEnglish' && value !== 'toPersian') {
+        throw new TypeError('INVALID_DIRECTION');
+      }
+    } else if (typeof value !== 'boolean') {
+      throw new TypeError('OPTION_MUST_BE_BOOLEAN');
+    }
+    defaults[key] = value;
+  });
+  return defaults;
+}
+
+function withDefaults(convert, defaults, keys) {
+  return (input, options = {}) => {
+    const strictOptions = convert === formatNumber || convert === switchKeyboard;
+    if (!options || typeof options !== 'object' || (strictOptions && Array.isArray(options))) {
+      if (strictOptions || (convert === toPersian && options === null)) {
+        return convert(input, options);
+      }
+      return convert(input, defaults);
+    }
+    const merged = Object.create(null);
+    keys.forEach((key) => {
+      if (Object.prototype.hasOwnProperty.call(defaults, key)) merged[key] = defaults[key];
+      if (Object.prototype.hasOwnProperty.call(options, key)) {
+        const value = options[key];
+        if (value !== undefined) merged[key] = value;
+      }
+    });
+    return convert(input, merged);
+  };
+}
+
+function createPersian(config = {}) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new TypeError('OPTIONS_MUST_BE_OBJECT');
+  }
+  const methods = {
+    toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard,
+  };
+  const optionKeys = {
+    toPersian: ['arabic', 'english', 'preserveHalfSpace', 'preserveDiacritics'],
+    toEnglish: ['arabic'],
+    formatNumber: ['separator'],
+    numberToWords: ['ordinal'],
+    switchKeyboard: ['direction'],
+  };
+  Object.keys(config).forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(methods, key)) throw new TypeError('UNKNOWN_OPTION');
+  });
+  const instance = {};
+  Object.keys(methods).forEach((key) => {
+    const supplied = Object.prototype.hasOwnProperty.call(config, key) ? config[key] : undefined;
+    const defaults = snapshotDefaults(supplied === undefined ? {} : supplied, optionKeys[key]);
+    instance[key] = withDefaults(methods[key], defaults, optionKeys[key]);
+  });
+  return instance;
+}
+
 module.exports = {
   toPersian,
   toEnglish,
   formatNumber,
   numberToWords,
   switchKeyboard,
+  createPersian,
 };

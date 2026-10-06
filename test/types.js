@@ -1,5 +1,6 @@
 var assert = require('assert');
 var path = require('path');
+var fs = require('fs');
 var spawnSync = require('child_process').spawnSync;
 
 var compiler = path.resolve(process.argv[2]);
@@ -18,8 +19,13 @@ assert.strictEqual(valid.status, 0, valid.stdout + valid.stderr);
 var invalid = compile('types-invalid.ts');
 assert.notStrictEqual(invalid.status, 0, invalid.stdout + invalid.stderr);
 var errors = invalid.stdout.match(/error TS[0-9]+:/g) || [];
-assert.strictEqual(errors.length, 12, invalid.stdout + invalid.stderr);
-for (var line = 3; line <= 14; line += 1) {
+var invalidLines = fs.readFileSync(path.join(consumer, 'types-invalid.ts'), 'utf8').split(/\r?\n/);
+var expectedLines = [];
+invalidLines.forEach(function (line, index) {
+  if (line.trim() && line.indexOf('import ') !== 0) expectedLines.push(index + 1);
+});
+assert.strictEqual(errors.length, expectedLines.length, invalid.stdout + invalid.stderr);
+expectedLines.forEach(function (line) {
   assert.ok(invalid.stdout.indexOf('types-invalid.ts(' + line + ',') !== -1, invalid.stdout);
-}
+});
 console.log('TypeScript valid inputs accepted and invalid inputs rejected.');

@@ -1,4 +1,4 @@
-import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard } from 'persian';
+import { toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian } from 'persian';
 
 var checks = 0;
 function equal(actual, expected) {
@@ -16,7 +16,7 @@ function rejects(action, type, message) {
 
 var result = document.getElementById('result');
 try {
-  [toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard].forEach(function (method) {
+  [toPersian, toEnglish, formatNumber, numberToWords, switchKeyboard, createPersian].forEach(function (method) {
     equal(typeof method, 'function');
   });
   equal(toPersian('اردك علي ٤6٦'), 'اردک علی ۴۶۶');
@@ -51,6 +51,33 @@ try {
   equal(JSON.stringify(Object.getOwnPropertyNames(String.prototype)), JSON.stringify(window.stringProperties));
   equal(String.prototype.replaceAll, window.originalReplaceAll);
   equal('aba'.replaceAll('a', 'x'), 'xbx');
+  equal(numberToWords(3, { ordinal: true }), 'سوم');
+  equal(numberToWords(30, { ordinal: true }), 'سی\u200cام');
+  equal(numberToWords('-23.00', { ordinal: true }), 'منفی بیست و سوم');
+  rejects(function () { numberToWords('0.01', { ordinal: true }); }, RangeError, 'ORDINAL_REQUIRES_INTEGER');
+  var config = {
+    toPersian: { preserveHalfSpace: true },
+    toEnglish: { arabic: true },
+    formatNumber: { separator: ',' },
+    numberToWords: { ordinal: true },
+    switchKeyboard: { direction: 'toPersian' },
+  };
+  var fa = createPersian(config);
+  equal(fa.toPersian('مي\u200cروم'), 'می\u200cروم');
+  equal(fa.toEnglish('٣'), '3');
+  equal(fa.formatNumber('1234'), '1,234');
+  equal(fa.numberToWords(3), 'سوم');
+  equal(fa.numberToWords(3, { ordinal: false }), 'سه');
+  equal(fa.numberToWords(3, { ordinal: undefined }), 'سوم');
+  equal(fa.switchKeyboard('google'), 'لخخلمث');
+  equal(numberToWords(3), 'سه');
+  equal(createPersian().toEnglish('٣'), '٣');
+  config.toEnglish.arabic = false;
+  equal(fa.toEnglish('٣'), '3');
+  equal(JSON.stringify([1, 2, 3].map(fa.numberToWords)), JSON.stringify(['یکم', 'دوم', 'سوم']));
+  rejects(function () { createPersian({ numberToWords: { ordinal: 'yes' } }); }, TypeError, 'OPTION_MUST_BE_BOOLEAN');
+  equal(JSON.stringify(Object.getOwnPropertyNames(String.prototype)), JSON.stringify(window.stringProperties));
+  equal(String.prototype.replaceAll, window.originalReplaceAll);
   result.textContent = checks + ' browser checks passed.';
   result.dataset.checks = String(checks);
   result.dataset.status = 'passed';
