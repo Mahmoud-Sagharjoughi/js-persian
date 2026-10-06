@@ -98,6 +98,7 @@ jobs:
           package-manager-cache: false
       - run: node --version
       - run: node "${{ runner.temp }}/consumer/test.js"
+      - run: node "${{ runner.temp }}/consumer/benchmark.js"
       - name: Native ESM imports
         if: ${{ !startsWith(matrix.node, '0.') && !startsWith(matrix.node, '4.') && !startsWith(matrix.node, '6.') && !startsWith(matrix.node, '8.') && !startsWith(matrix.node, '9.') && !startsWith(matrix.node, '10.') }}
         run: node "${{ runner.temp }}/consumer/test.mjs"

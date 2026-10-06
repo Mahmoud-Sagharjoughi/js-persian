@@ -6,9 +6,7 @@ function replaceAll(str, mapObj) {
 function replaceArabicToPersian(str, preserveHalfSpace, preserveDiacritics) {
   let newStr = str;
   if (!preserveDiacritics) {
-    for (let i = 1611; i < 1632; i += 1) {
-      newStr = newStr.replace(new RegExp(String.fromCharCode(i), 'g'), '');
-    }
+    newStr = newStr.replace(/[\u064b-\u065f]/g, '');
   }
 
   const charMap = {

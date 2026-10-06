@@ -24,10 +24,14 @@ assert.strictEqual(metadata.main, 'dist/persian.js');
 assert.strictEqual(metadata.types, 'index.d.ts');
 assert.deepEqual(Object.keys(metadata.dependencies || {}), []);
 
+var benchmark = fs.readFileSync(path.join(__dirname, '../benchmark/to-persian.js'), 'utf8');
 if (process.argv[4] === '--check-syntax') {
-  require('acorn').parse(fs.readFileSync(path.join(target, metadata.main), 'utf8'), { ecmaVersion: 5 });
-  console.log('ES5 syntax verified.');
+  var parse = require('acorn').parse;
+  parse(fs.readFileSync(path.join(target, metadata.main), 'utf8'), { ecmaVersion: 5 });
+  parse(benchmark, { ecmaVersion: 5 });
+  console.log('Package and benchmark ES5 syntax verified.');
 }
+fs.writeFileSync(path.join(consumer, 'benchmark.js'), benchmark.replace(/require\('\.\.\/'\)/g, "require('persian')"));
 
 var regression = fs.readFileSync(path.join(__dirname, 'persian.test.js'), 'utf8');
 fs.writeFileSync(path.join(consumer, 'test.js'), regression.replace(/require\('\.\.\/'\)/g, "require('persian')"));

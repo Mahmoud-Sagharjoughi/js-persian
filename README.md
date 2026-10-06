@@ -37,9 +37,29 @@ inputs, unchanged `String.prototype`, and all 65,536 UTF-16 code units across
 every combination of conversion options.
 
 CI builds one npm archive and tests that archive on the Node.js versions above
-on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. It also checks native
+on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. Each runtime also runs
+the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2.
+
+## Benchmarks
+
+Build with `npm run build`, then run `npm run benchmark` to measure `toPersian`
+on fixed short and long inputs, including mixed digits, diacritics, and options
+that preserve diacritics or disable Arabic conversion. The benchmark uses ES5
+and Node's built-in timer and can run directly on Node.js 0.10 and later:
+
+```bash
+node benchmark/to-persian.js
+node benchmark/to-persian.js /path/to/baseline/persian.js
+```
+
+The optional baseline is a compiled CommonJS module exporting `toPersian`.
+Comparison runs verify matching outputs, warm up both modules, alternate their
+measurement order, and report the median of seven samples. Results are
+microseconds per call; a baseline/current ratio above 1 means the current module
+is faster. Timings depend on the machine and runtime and are not CI pass/fail
+thresholds. The benchmark is not included in the published package.
 
 ## Examples
 
