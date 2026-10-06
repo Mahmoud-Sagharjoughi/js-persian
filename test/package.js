@@ -10,14 +10,28 @@ var archives = fs.readdirSync(archiveDirectory).filter(function (file) {
 });
 assert.strictEqual(archives.length, 1, 'Expected one npm package');
 var archive = fs.readFileSync(path.join(archiveDirectory, archives[0]));
-var expectedFiles = ['LICENSE', 'README.md', 'dist/persian.js', 'index.d.ts', 'package.json'];
+var expectedFiles = ['CHANGELOG.md', 'LICENSE', 'README.md', 'dist/persian.js', 'index.d.ts', 'package.json'];
 var entries = execFileSync('tar', ['-tzf', '-'], { input: archive, encoding: 'utf8' }).trim().split(/\r?\n/);
 assert.deepEqual(entries.sort(), expectedFiles.map(function (file) { return 'package/' + file; }).sort());
 
+var prepareInstall = process.argv[4] === '--prepare-install';
 var target = path.join(consumer, 'node_modules', 'persian');
-fs.mkdirSync(target, { recursive: true });
-execFileSync('tar', ['-xzf', '-', '--strip-components=1'], { input: archive, cwd: target });
-var metadata = JSON.parse(fs.readFileSync(path.join(target, 'package.json'), 'utf8'));
+assert.ok(!fs.existsSync(consumer), 'Expected a fresh consumer directory');
+fs.mkdirSync(consumer, { recursive: true });
+var metadata = JSON.parse(execFileSync('tar', ['-xOzf', '-', 'package/package.json'], {
+  input: archive, encoding: 'utf8',
+}));
+if (prepareInstall) {
+  fs.writeFileSync(path.join(consumer, 'persian.tgz'), archive);
+  fs.writeFileSync(path.join(consumer, 'package.json'), JSON.stringify({
+    name: 'persian-install-test', version: '1.0.0', private: true,
+  }, null, 2) + '\n');
+  fs.copyFileSync(path.join(__dirname, 'installed.js'), path.join(consumer, 'installed.js'));
+  fs.writeFileSync(path.join(consumer, 'expected-package.json'), JSON.stringify(metadata));
+} else {
+  fs.mkdirSync(target, { recursive: true });
+  execFileSync('tar', ['-xzf', '-', '--strip-components=1'], { input: archive, cwd: target });
+}
 assert.strictEqual(metadata.name, 'persian');
 assert.strictEqual(metadata.version, require('../package.json').version);
 assert.strictEqual(metadata.main, 'dist/persian.js');
@@ -29,6 +43,7 @@ if (process.argv[4] === '--check-syntax') {
   var parse = require('acorn').parse;
   parse(fs.readFileSync(path.join(target, metadata.main), 'utf8'), { ecmaVersion: 5 });
   parse(benchmark, { ecmaVersion: 5 });
+  parse(fs.readFileSync(path.join(__dirname, 'installed.js'), 'utf8'), { ecmaVersion: 5 });
   console.log('Package and benchmark ES5 syntax verified.');
 }
 fs.writeFileSync(path.join(consumer, 'benchmark.js'), benchmark.replace(/require\('\.\.\/'\)/g, "require('persian')"));

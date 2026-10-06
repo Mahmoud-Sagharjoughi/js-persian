@@ -18,7 +18,7 @@ yarn add persian
 ```
 
 The new conversion options, number and keyboard utilities, and TypeScript definitions below
-are part of the upcoming 1.1.0 release.
+are part of the upcoming 1.1.0 release. See [CHANGELOG.md](CHANGELOG.md) for changes.
 
 ## Compatibility
 
@@ -37,7 +37,10 @@ inputs, unchanged `String.prototype`, and all 65,536 UTF-16 code units across
 every combination of conversion options.
 
 CI builds one npm archive and tests that archive on the Node.js versions above
-on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. Each runtime also runs
+on Linux, plus Node.js 22, 24 and 26 on Windows and macOS. Each runtime installs
+the local archive into a fresh project with its bundled npm, with install scripts
+enabled and an unreachable registry, then runs the regression tests. CI also
+checks that installation adds no runtime dependencies. Each runtime also runs
 the benchmark without a timing threshold. CI checks native
 ESM imports on Node.js 12 and later, ES5 output syntax, package contents, and valid
 and invalid TypeScript usage with TypeScript 2.6.2 and 7.0.2.

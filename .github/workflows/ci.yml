@@ -91,12 +91,24 @@ jobs:
         with:
           name: npm-package
           path: ${{ runner.temp }}/npm-package
-      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer"
+      - run: node test/package.js "${{ runner.temp }}/npm-package" "${{ runner.temp }}/consumer" --prepare-install
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ matrix.node }}
           package-manager-cache: false
       - run: node --version
+      - run: npm --version
+      - name: Install local npm archive
+        working-directory: ${{ runner.temp }}/consumer
+        env:
+          npm_config_cache: ${{ runner.temp }}/npm-install-cache
+          npm_config_userconfig: ${{ runner.temp }}/consumer/npmrc
+          npm_config_registry: http://127.0.0.1:9
+          npm_config_audit: 'false'
+          npm_config_fund: 'false'
+          npm_config_update_notifier: 'false'
+        run: npm install ./persian.tgz --save
+      - run: node "${{ runner.temp }}/consumer/installed.js"
       - run: node "${{ runner.temp }}/consumer/test.js"
       - run: node "${{ runner.temp }}/consumer/benchmark.js"
       - name: Native ESM imports
